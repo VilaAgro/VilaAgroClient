@@ -86,10 +86,6 @@
 
     input, .p-password {
       width: 100%;
-      padding: 0.75rem;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 1rem;
       transition: border-color 0.3s;
 
       &:focus {
@@ -132,18 +128,7 @@
   width: 100%;
   padding: 0.75rem;
   background: #4CAF50;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  margin-bottom: 1.5rem;
-
-  &:hover {
-    background: #45a049;
-  }
+  border-radius: 5px;
 }
 
 .register-link {
