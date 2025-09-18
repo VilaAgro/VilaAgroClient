@@ -1,23 +1,27 @@
 import { Component } from '@angular/core';
-import { FormControl, FormGroup, FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormControl, FormGroup, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { CheckboxModule } from 'primeng/checkbox';
 
 @Component({
   selector: 'app-login',
-  imports: [InputTextModule, PasswordModule, ButtonModule, CommonModule, FormsModule, FormsModule],
+  standalone: true,
+  imports: [InputTextModule, PasswordModule, ButtonModule, CommonModule, FormsModule, ReactiveFormsModule, FloatLabelModule, CheckboxModule],
   templateUrl: './login.html',
-  styleUrl: './login.scss'
+  styleUrls: ['./login.scss']
 })
 export class Login {
   loginForm: FormGroup;
 
   constructor() {
     this.loginForm = new FormGroup({
-      username: new FormControl(''),
-      password: new FormControl('')
+      email: new FormControl(''),
+      password: new FormControl(''),
+      rememberMe: new FormControl(false)
     });
   }
 

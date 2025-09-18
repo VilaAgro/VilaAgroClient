@@ -1,13 +1,69 @@
-<div class="login-container">
-  <h2>Login</h2>
-  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-    <p-floatlabel variant="on">
-      <input pInputText id="username" formControlName="username" autocomplete="off" />
-      <label for="username">Username</label>
-    </p-floatlabel>
-    <p-floatlabel variant="on">
-      <input pInputText id="password" formControlName="password" type="password" autocomplete="off" />
-      <label for="password">Password</label>
-    </p-floatlabel>
-  </form>
+<div class="login-page">
+  <!-- Background Image -->
+  <div class="background-image"></div>
+
+  <!-- Login Form Container -->
+  <div class="login-container">
+    <!-- Logo and Title -->
+    <div class="header">
+      <div class="logo">
+        <img src="/assets/images/logo.svg" alt="Vila Agro" />
+      </div>
+      <h1>Vila Agro</h1>
+      <p>A casa do produtor Rural</p>
+    </div>
+
+    <!-- Login Form -->
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input
+          pInputText
+          id="email"
+          formControlName="email"
+          type="email"
+          class="w-full"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Senha</label>
+        <p-password
+          id="password"
+          formControlName="password"
+          [feedback]="false"
+          [toggleMask]="true"
+          styleClass="w-full"
+          inputStyleClass="w-full">
+        </p-password>
+      </div>
+
+      <div class="remember-forgot">
+        <div class="remember">
+          <p-checkbox
+            formControlName="rememberMe"
+            inputId="rememberMe"
+            [binary]="true">
+          </p-checkbox>
+          <label for="rememberMe">Lembrar de mim</label>
+        </div>
+        <a href="#" class="forgot-link">Esqueceu a senha?</a>
+      </div>
+
+      <button
+        pButton
+        type="submit"
+        label="Entrar"
+        icon="pi pi-sign-in"
+        class="login-button w-full">
+      </button>
+    </form>
+
+    <!-- Register Link -->
+    <div class="register-link">
+      <span>Não possui uma conta? </span>
+      <a href="#" class="register-text">Cadastre-se</a>
+    </div>
+  </div>
 </div>
