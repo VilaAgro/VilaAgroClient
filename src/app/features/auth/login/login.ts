@@ -6,6 +6,7 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { CheckboxModule } from 'primeng/checkbox';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -17,7 +18,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 export class Login {
   loginForm: FormGroup;
 
-  constructor() {
+  constructor(private router: Router) {
     this.loginForm = new FormGroup({
       email: new FormControl(''),
       password: new FormControl(''),
@@ -29,6 +30,10 @@ export class Login {
     if (this.loginForm.valid) {
       // Handle login logic here
     }
+  }
+
+  redirectToRegister(): void {
+    this.router.navigate(['/register']);
   }
 
 
