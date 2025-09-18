@@ -1,1 +1,13 @@
-<p>login works!</p>
+<div class="login-container">
+  <h2>Login</h2>
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <p-floatlabel variant="on">
+      <input pInputText id="username" formControlName="username" autocomplete="off" />
+      <label for="username">Username</label>
+    </p-floatlabel>
+    <p-floatlabel variant="on">
+      <input pInputText id="password" formControlName="password" type="password" autocomplete="off" />
+      <label for="password">Password</label>
+    </p-floatlabel>
+  </form>
+</div>
