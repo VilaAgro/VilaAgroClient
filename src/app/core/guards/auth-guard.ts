@@ -1,6 +1,8 @@
+// VilaAgroClient/src/app/core/guards/auth-guard.ts
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth';
+import { map, take } from 'rxjs/operators';
 
 /**
  * Guard que protege rotas que requerem autenticação
@@ -10,16 +12,20 @@ export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Verifica se o usuário está logado
-  if (authService.isLoggedIn()) {
-    return true;
-  }
+  // Espera a verificação inicial (GET /api/auth/me) terminar
+  return authService.authReady$.pipe(
+    take(1),
+    map(() => {
+      // Após a verificação, checa o estado
+      if (authService.isLoggedIn()) {
+        return true;
+      }
 
-  // Se não estiver logado, redireciona para login
-  // Salva a URL tentada para redirecionar após o login
-  router.navigate(['/login'], {
-    queryParams: { returnUrl: state.url }
-  });
-
-  return false;
+      // Se não estiver logado, redireciona para login
+      router.navigate(['/auth/login'], {
+        queryParams: { returnUrl: state.url }
+      });
+      return false;
+    })
+  );
 };

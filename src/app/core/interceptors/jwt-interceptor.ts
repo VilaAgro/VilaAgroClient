@@ -1,31 +1,24 @@
-import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../services/auth';
+import { HttpInterceptorFn } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 /**
- * Interceptor que adiciona automaticamente o token JWT nas requisições para a API
+ * Interceptor que garante que os cookies sejam enviados nas requisições para a API
+ * Como a API usa cookies HttpOnly, não precisamos adicionar headers manualmente
  */
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-
   // Verifica se a requisição é para a API
   if (!req.url.startsWith(environment.apiUrl)) {
     return next(req);
   }
 
-  // Obtém o token do AuthService
-  const token = authService.getToken();
-
-  // Se não há token, prossegue sem modificar a requisição
-  if (!token) {
-    return next(req);
-  }
-
-  // Clona a requisição adicionando o header Authorization
+  // Clone a requisição adicionando withCredentials: true
+  // Isso permite que o navegador envie cookies automaticamente
   const authReq = req.clone({
+    withCredentials: true,
+    // Adiciona headers adicionais se necessário
     setHeaders: {
-      Authorization: `Bearer ${token}`
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     }
   });
 

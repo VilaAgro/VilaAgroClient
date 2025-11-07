@@ -1,1 +1,140 @@
-<p>register works!</p>
+<div class="register-page">
+  <div class="background-image"></div>
+
+  <div class="register-container">
+    <div class="header">
+      <div class="logo">
+        <img src="/assets/images/logo.svg" alt="Vila Agro" />
+      </div>
+      <h1>Vila Agro</h1>
+      <p>Cadastre-se</p>
+    </div>
+
+    @if (errorMessage) {
+      <p-message severity="error" [text]="errorMessage" styleClass="w-full mb-3"></p-message>
+    }
+
+    @if (successMessage) {
+      <p-message severity="success" [text]="successMessage" styleClass="w-full mb-3"></p-message>
+    }
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <div class="field">
+        <label for="name">Nome Completo</label>
+        <input
+          pInputText
+          id="name"
+          formControlName="name"
+          type="text"
+          class="w-full"
+          [class.ng-invalid]="nameInvalid"
+          placeholder="João Silva"
+        />
+        @if (nameInvalid) {
+          <small class="p-error">Nome deve ter no mínimo 3 caracteres</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input
+          pInputText
+          id="email"
+          formControlName="email"
+          type="email"
+          class="w-full"
+          [class.ng-invalid]="emailInvalid"
+          placeholder="seu@email.com"
+        />
+        @if (emailInvalid) {
+          <small class="p-error">E-mail inválido</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="cpf">CPF (apenas números)</label>
+        <input
+          pInputText
+          id="cpf"
+          formControlName="cpf"
+          type="text"
+          class="w-full"
+          [class.ng-invalid]="cpfInvalid"
+          placeholder="12345678900"
+          maxlength="11"
+        />
+        @if (cpfInvalid) {
+          <small class="p-error">CPF deve ter 11 dígitos</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="type">Tipo de Usuário</label>
+        <p-select
+          id="type"
+          formControlName="type"
+          [options]="userTypes"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Selecione o tipo"
+          styleClass="w-full"
+          [class.ng-invalid]="typeInvalid"
+        ></p-select>
+        @if (typeInvalid) {
+          <small class="p-error">Selecione um tipo de usuário</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="password">Senha</label>
+        <p-password
+          id="password"
+          formControlName="password"
+          [toggleMask]="true"
+          [feedback]="true"
+          [class.ng-invalid]="passwordInvalid"
+          placeholder="••••••"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+          fluid
+        ></p-password>
+        @if (passwordInvalid) {
+          <small class="p-error">Senha deve ter no mínimo 6 caracteres</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="confirmPassword">Confirmar Senha</label>
+        <p-password
+          id="confirmPassword"
+          formControlName="confirmPassword"
+          [toggleMask]="true"
+          [feedback]="false"
+          [class.ng-invalid]="confirmPasswordInvalid"
+          placeholder="••••••"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+          fluid
+        ></p-password>
+        @if (confirmPasswordInvalid) {
+          <small class="p-error">As senhas não coincidem</small>
+        }
+      </div>
+
+      <button
+        pButton
+        type="submit"
+        [label]="isLoading ? 'Cadastrando...' : 'Cadastrar'"
+        icon="pi pi-user-plus"
+        [loading]="isLoading"
+        [disabled]="isLoading"
+        class="register-button w-full"
+      ></button>
+    </form>
+
+    <div class="login-link">
+      <span>Já possui uma conta? </span>
+      <a href="#" class="login-text" (click)="redirectToLogin(); $event.preventDefault()">Entrar</a>
+    </div>
+  </div>
+</div>

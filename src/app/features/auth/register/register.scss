@@ -1,0 +1,138 @@
+.register-page {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.background-image {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)),
+              url('/assets/images/login-background.png');
+  background-size: cover;
+  background-position: center;
+  box-shadow: -13px 12px 58.9px 0 rgba(0, 0, 0, 0.25) inset;
+  z-index: 0;
+}
+
+.register-container {
+  width: 40%;
+  min-width: 450px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background: #ffffff;
+  z-index: 1;
+  position: relative;
+  overflow-y: auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  .logo {
+    margin-bottom: 0.5rem;
+
+    img {
+      max-width: 100px;
+      height: auto;
+    }
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: bold;
+    color: #333;
+    margin: 0.5rem 0;
+  }
+
+  p {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+}
+
+.register-form {
+  width: 100%;
+  max-width: 380px;
+
+  .field {
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #333;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    input, ::ng-deep .p-dropdown, ::ng-deep .p-password {
+      width: 100%;
+    }
+
+    small.p-error {
+      display: block;
+      margin-top: 0.25rem;
+      color: #e24c4c;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+.register-button {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: #4CAF50;
+  border-radius: 5px;
+}
+
+.login-link {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+
+  .login-text {
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Responsividade
+@media (max-width: 968px) {
+  .register-page {
+    flex-direction: column;
+  }
+
+  .background-image {
+    position: relative;
+    width: 100%;
+    height: 20vh;
+  }
+
+  .register-container {
+    width: 100%;
+    min-width: auto;
+    min-height: 80vh;
+    padding: 1.5rem;
+  }
+
+  .register-form {
+    max-width: 100%;
+  }
+}

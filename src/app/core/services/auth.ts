@@ -1,11 +1,10 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { CookieService } from 'ngx-cookie-service';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { User, LoginRequest, LoginResponse, AuthState } from '../models/user.model';
+import { User, LoginRequest, AuthResponse, AuthState, RegisterRequest, UserType } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -13,77 +12,110 @@ import { User, LoginRequest, LoginResponse, AuthState } from '../models/user.mod
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  private readonly cookieService = inject(CookieService);
 
-  private readonly TOKEN_KEY = 'jwt-token';
-  private readonly TOKEN_EXPIRY_HOURS = 24;
-
-  // Estado reativo usando Signals
-  private readonly authStateSubject = new BehaviorSubject<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    token: null
-  });
+  // --- LÓGICA DE TOKEN E COOKIE REMOVIDA ---
+  // O back-end e o navegador agora gerenciam os cookies HttpOnly
 
   // Signals públicos para componentes
   public readonly authState = signal<AuthState>({
     isAuthenticated: false,
     user: null,
-    token: null
   });
 
   public readonly isAuthenticated = computed(() => this.authState().isAuthenticated);
   public readonly currentUser = computed(() => this.authState().user);
-  public readonly userRole = computed(() => this.authState().user?.role);
+  public readonly userRole = computed(() => this.authState().user?.role); // Corrigido de 'role' para 'type'
+
+  // Usado para garantir que os guards esperem a verificação inicial
+  private authReadySubject = new BehaviorSubject<boolean>(false);
+  public authReady$ = this.authReadySubject.asObservable();
 
   constructor() {
-    this.initializeAuthState();
+    this.checkAuthenticationStatus();
   }
 
   /**
-   * Inicializa o estado de autenticação verificando se existe um token válido
+   * Verifica o status de autenticação ao carregar a aplicação.
+   * A única forma de saber se temos um cookie HttpOnly válido é
+   * fazendo uma requisição a um endpoint protegido.
+   * (Corresponde ao antigo 'initializeAuthState')
    */
-  private initializeAuthState(): void {
-    const token = this.getToken();
-    if (token && this.isTokenValid(token)) {
-      const user = this.getUserFromToken(token);
-      if (user) {
-        this.updateAuthState({
-          isAuthenticated: true,
-          user,
-          token
-        });
-      } else {
+  private checkAuthenticationStatus(): void {
+    // GET /api/auth/me
+    this.http.get<AuthResponse>(`${environment.apiUrl}/auth/me`).pipe(
+      tap(response => {
+        if (response.success && response.user) {
+          this.updateAuthState({
+            isAuthenticated: true,
+            user: response.user
+          });
+        } else {
+          this.clearAuthState();
+        }
+      }),
+      catchError(() => {
         this.clearAuthState();
-      }
-    } else {
-      this.clearAuthState();
-    }
+        return of(null); // Continua o fluxo
+      }),
+      tap(() => {
+        this.authReadySubject.next(true); // Informa aos guards que a verificação terminou
+        this.authReadySubject.complete();
+      })
+    ).subscribe();
   }
 
   /**
    * Realiza o login do usuário
    */
-  login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials)
+  login(credentials: LoginRequest): Observable<AuthResponse> {
+    // POST /api/auth/login
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials)
       .pipe(
         tap(response => {
-          this.setToken(response.token);
+          if (!response.success || !response.user) {
+            throw new Error(response.message || 'Erro no login');
+          }
+
           this.updateAuthState({
             isAuthenticated: true,
             user: response.user,
-            token: response.token
           });
 
-          // Redireciona baseado no role do usuário
-          if (response.user.role === 'ADMIN') {
-            this.router.navigate(['/admin/dashboard']);
-          } else {
-            this.router.navigate(['/painel']);
-          }
+          // Redireciona baseado no tipo de usuário (role)
+          this.redirectUser(response.user.role);
         }),
         catchError(error => {
           console.error('Erro no login:', error);
+          this.clearAuthState();
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * Realiza o registro do usuário
+   */
+  register(data: RegisterRequest): Observable<AuthResponse> {
+    // POST /api/auth/register
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, data)
+      .pipe(
+        tap(response => {
+          if (!response.success || !response.user) {
+            throw new Error(response.message || 'Erro no registro');
+          }
+
+          // O registro no back-end já faz o login (define os cookies)
+          this.updateAuthState({
+            isAuthenticated: true,
+            user: response.user,
+          });
+
+          // Redireciona o novo usuário
+          this.redirectUser(response.user.role);
+        }),
+        catchError(error => {
+          console.error('Erro no registro:', error);
+          this.clearAuthState();
           return throwError(() => error);
         })
       );
@@ -93,18 +125,17 @@ export class AuthService {
    * Realiza o logout do usuário
    */
   logout(): void {
-    // Chama endpoint de logout se necessário
+    // POST /api/auth/logout
     this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe({
-      complete: () => {
-        this.clearAuthState();
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        // Mesmo com erro na API, limpa o estado local
-        this.clearAuthState();
-        this.router.navigate(['/login']);
-      }
+      next: () => this.handleLogoutSuccess(),
+      error: () => this.handleLogoutSuccess(), // Mesmo com erro, desloga localmente
+      complete: () => this.handleLogoutSuccess()
     });
+  }
+
+  private handleLogoutSuccess(): void {
+    this.clearAuthState();
+    this.router.navigate(['/auth/login']);
   }
 
   /**
@@ -112,43 +143,29 @@ export class AuthService {
    */
   forceLogout(): void {
     this.clearAuthState();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/auth/login']);
   }
 
   /**
-   * Obtém o token do cookie
-   */
-  getToken(): string | null {
-    return this.cookieService.get(this.TOKEN_KEY) || null;
-  }
-
-  /**
-   * Verifica se o usuário está logado
+   * Verifica se o usuário está logado (usado pelos guards)
    */
   isLoggedIn(): boolean {
-    const token = this.getToken();
-    return token !== null && this.isTokenValid(token);
-  }
-
-  /**
-   * Obtém o role do usuário atual
-   */
-  getUserRole(): string | null {
-    return this.currentUser()?.role || null;
+    return this.isAuthenticated();
   }
 
   /**
    * Verifica se o usuário é admin
    */
   isAdmin(): boolean {
-    return this.getUserRole() === 'ADMIN';
+    return this.userRole() === 'ADMIN';
   }
 
   /**
-   * Verifica se o usuário é user comum
+   * Verifica se o usuário é um tipo de comerciante
    */
   isUser(): boolean {
-    return this.getUserRole() === 'USER';
+    const role = this.userRole();
+    return role === 'PRODUTOR_RURAL' || role === 'GASTRONOMO' || role === 'PRODUTOR_ARTESANAL';
   }
 
   /**
@@ -159,92 +176,13 @@ export class AuthService {
   }
 
   /**
-   * Atualiza o perfil do usuário (após edição)
+   * Redireciona o usuário após o login baseado no seu tipo
    */
-  updateUserProfile(user: User): void {
-    this.updateAuthState({
-      ...this.authState(),
-      user
-    });
-  }
-
-  /**
-   * Define o token no cookie
-   */
-  private setToken(token: string): void {
-    const expiryDate = new Date();
-    expiryDate.setHours(expiryDate.getHours() + this.TOKEN_EXPIRY_HOURS);
-
-    this.cookieService.set(
-      this.TOKEN_KEY,
-      token,
-      expiryDate,
-      '/', // path
-      undefined, // domain
-      true, // secure (apenas HTTPS em produção)
-      'Strict' // sameSite
-    );
-  }
-
-  /**
-   * Remove o token do cookie
-   */
-  private removeToken(): void {
-    this.cookieService.delete(this.TOKEN_KEY, '/');
-  }
-
-  /**
-   * Verifica se o token é válido (não expirado)
-   */
-  private isTokenValid(token: string): boolean {
-    try {
-      const payload = this.decodeToken(token);
-      const currentTime = Math.floor(Date.now() / 1000);
-      return payload.exp > currentTime;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Decodifica o token JWT
-   */
-  private decodeToken(token: string): any {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      return JSON.parse(jsonPayload);
-    } catch (error) {
-      throw new Error('Token inválido');
-    }
-  }
-
-  /**
-   * Extrai os dados do usuário do token
-   */
-  private getUserFromToken(token: string): User | null {
-    try {
-      const payload = this.decodeToken(token);
-      return {
-        id: payload.sub || payload.userId,
-        email: payload.email,
-        name: payload.name,
-        role: payload.role,
-        status: payload.status,
-        category: payload.category,
-        phone: payload.phone,
-        document: payload.document,
-        createdAt: new Date(payload.createdAt),
-        updatedAt: new Date(payload.updatedAt)
-      };
-    } catch {
-      return null;
+  private redirectUser(userType: UserType): void {
+    if (userType === 'ADMIN') {
+      this.router.navigate(['/admin/dashboard']); // Rota futura do Admin
+    } else {
+      this.router.navigate(['/painel']); // Rota futura do Comerciante
     }
   }
 
@@ -253,25 +191,16 @@ export class AuthService {
    */
   private updateAuthState(state: AuthState): void {
     this.authState.set(state);
-    this.authStateSubject.next(state);
   }
 
   /**
    * Limpa o estado de autenticação
    */
   private clearAuthState(): void {
-    this.removeToken();
+    // Não precisamos mais limpar cookies, o back-end (logout) faz isso.
     this.updateAuthState({
       isAuthenticated: false,
       user: null,
-      token: null
     });
-  }
-
-  /**
-   * Observable para o estado de autenticação (para compatibilidade)
-   */
-  get authState$(): Observable<AuthState> {
-    return this.authStateSubject.asObservable();
   }
 }
