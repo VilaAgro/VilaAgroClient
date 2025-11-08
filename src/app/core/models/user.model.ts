@@ -18,7 +18,7 @@ export interface User {
   name: string;
   email: string;
   documentsStatus: AccountStatus;
-  role: UserType;
+  type: UserType;
   status: AccountStatus;
   phone?: string | null;
   cpfCnpj?: string | null;
