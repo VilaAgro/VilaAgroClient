@@ -1,1 +1,44 @@
-<p>admin-layout works!</p>
+<p-toolbar styleClass="admin-toolbar">
+  <div class="p-toolbar-group-start">
+    <p-button
+      icon="pi pi-bars"
+      (click)="toggleSidebar()"
+      [text]="true"
+      [rounded]="true"
+      styleClass="menu-button"
+    />
+    <span class="logo-text">Vila Agro - Admin</span>
+  </div>
+
+  <div class="p-toolbar-group-end">
+    <span class="welcome-text">Olá, {{ currentUser?.name }}</span>
+    <p-button
+      icon="pi pi-sign-out"
+      label="Sair"
+      (click)="logout()"
+      [text]="true"
+      [rounded]="true"
+      styleClass="logout-button"
+    />
+  </div>
+</p-toolbar>
+
+<p-drawer
+  [(visible)]="sidebarVisible"
+  [showCloseIcon]="false"
+  styleClass="admin-sidebar"
+>
+  <ng-template pTemplate="header">
+    <div class="sidebar-header">
+      <div class="logo">
+        <img src="/assets/images/logo.svg" alt="Vila Agro Logo" />
+      </div>
+      <h3>Vila Agro</h3>
+    </div>
+  </ng-template>
+  <p-menu [model]="menuItems" styleClass="admin-menu" />
+</p-drawer>
+
+<div class="admin-content" [class.sidebar-visible]="sidebarVisible">
+  <router-outlet></router-outlet>
+</div>
