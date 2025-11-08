@@ -1,1 +1,66 @@
-<p>admin-dashboard works!</p>
+<div class="admin-dashboard">
+  <div class="header">
+    <h1>Dashboard Administrativo</h1>
+  </div>
+
+  @if (loading) {
+  <div class="loading">Carregando estatísticas...</div>
+  } @else if (stats) {
+  <div class="stats-grid">
+    <p-card header="Solicitações Pendentes" styleClass="stat-card pending">
+      <div class="stat-value">{{ stats.pendingRegistrations }}</div>
+      <p>Novos cadastros aguardando aprovação</p>
+    </p-card>
+
+    <p-card header="Fila de Espera" styleClass="stat-card waiting">
+      <div class="stat-value">{{ stats.waitingList }}</div>
+      <p>Usuários aprovados aguardando alocação</p>
+    </p-card>
+
+    <p-card
+      header="Justificativas Pendentes"
+      styleClass="stat-card justifications"
+    >
+      <div class="stat-value">{{ stats.pendingJustifications }}</div>
+      <p>Faltas aguardando análise</p>
+    </p-card>
+
+    <p-card header="Taxa de Ocupação" styleClass="stat-card occupation">
+      <div class="stat-value">{{ stats.occupationRate.toFixed(1) }}%</div>
+      <p>
+        {{ stats.occupiedSalePoints }} de {{ stats.totalSalePoints }} pontos
+        ocupados
+      </p>
+    </p-card>
+  </div>
+
+  <div class="actions-grid">
+    <p-card header="Ações Rápidas">
+      <button
+        pButton
+        label="Gerenciar Usuários"
+        class="mb-2 mr-2"
+        icon="pi pi-users"
+      ></button>
+      <button
+        pButton
+        label="Pontos de Venda"
+        class="mb-2 mr-2 w-full"
+        icon="pi pi-map-marker"
+      ></button>
+      <button
+        pButton
+        label="Frequência"
+        class="mb-2 mr-2 w-full"
+        icon="pi pi-calendar"
+      ></button>
+      <button
+        pButton
+        label="Feiras"
+        class="w-full"
+        icon="pi pi-shopping-bag"
+      ></button>
+    </p-card>
+  </div>
+  }
+</div>
