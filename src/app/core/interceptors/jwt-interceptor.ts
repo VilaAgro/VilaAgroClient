@@ -14,12 +14,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   // Clone a requisição adicionando withCredentials: true
   // Isso permite que o navegador envie cookies automaticamente
   const authReq = req.clone({
-    withCredentials: true,
-    // Adiciona headers adicionais se necessário
-    setHeaders: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
+    withCredentials: true
   });
 
   return next(authReq);
