@@ -13,11 +13,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/user/dashboard/dashboard').then(c => c.UserDashboard)
   },
-  // {
-  //   path: 'admin',
-  //   canActivate: [adminGuard],
-  //   loadChildren: () => import('./features/admin/admin-routing').then(m => m.AdminRoutes)
-  // },
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./shared/components/admin-layout/admin-layout').then(c => c.AdminLayout),
+    loadChildren: () => import('./features/admin/admin-dashboard/admin-routing').then(m => m.AdminRoutes)
+  },
   {
     path: '**',
     redirectTo: 'auth'
