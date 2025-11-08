@@ -2,7 +2,9 @@
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth';
-import { map, take } from 'rxjs/operators';
+import { map, take, filter } from 'rxjs/operators';
+import { of } from 'rxjs';
+
 
 /**
  * Guard que protege rotas que requerem autenticação
@@ -11,17 +13,15 @@ import { map, take } from 'rxjs/operators';
 export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-
-  // Espera a verificação inicial (GET /api/auth/me) terminar
-  return authService.authReady$.pipe(
-    take(1),
-    map(() => {
-      // Após a verificação, checa o estado
+  const ready$ = (authService as any).authReady$ ?? of(true);
+  return ready$.pipe(
+    filter(ready => ready === true), // Espera o authReady$ ser 'true'
+    take(1),                      // Pega esse valor 'true'
+    map(() => {                   // Agora executa a lógica do guard
       if (authService.isLoggedIn()) {
         return true;
       }
-
-      // Se não estiver logado, redireciona para login
+      console.log('authGuard: usuário não autenticado, redirecionando para /auth/login');
       router.navigate(['/auth/login'], {
         queryParams: { returnUrl: state.url }
       });

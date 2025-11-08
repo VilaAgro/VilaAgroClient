@@ -2,7 +2,7 @@
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth';
-import { map, take } from 'rxjs/operators';
+import { map, take, filter } from 'rxjs/operators';
 
 /**
  * Guard que protege rotas administrativas
@@ -14,25 +14,22 @@ export const adminGuard: CanActivateFn = (route, state) => {
 
   // Espera a verificação inicial (GET /api/auth/me) terminar
   return authService.authReady$.pipe(
-    take(1),
-    map(() => {
-      // Verifica se o usuário é admin
-      if (authService.isAdmin()) {
-        return true;
-      }
+  filter(ready => ready === true), // Espera o authReady$ ser 'true'
+  take(1),                      // Pega esse valor 'true'
+  map(() => {                   // Agora executa a lógica do guard
+    if (authService.isAdmin()) {
+      return true;
+    }
 
-      // Se não for admin (mas talvez esteja logado como usuário),
-      // redireciona para o painel do usuário.
-      if (authService.isLoggedIn()) {
-        router.navigate(['/painel']);
-        return false;
-      }
-
-      // Se não estiver logado, redireciona para login
-      router.navigate(['/auth/login'], {
-        queryParams: { returnUrl: state.url }
-      });
+    if (authService.isLoggedIn()) {
+      router.navigate(['/painel']);
       return false;
-    })
-  );
+    }
+
+    router.navigate(['/auth/login'], {
+      queryParams: { returnUrl: state.url }
+    });
+    return false;
+  })
+);
 };
