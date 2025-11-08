@@ -2,7 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { User, LoginRequest, AuthResponse, AuthState, RegisterRequest, UserType } from '../models/user.model';
 
@@ -13,8 +13,9 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  // --- LÓGICA DE TOKEN E COOKIE REMOVIDA ---
-  // O back-end e o navegador agora gerenciam os cookies HttpOnly
+  // Chaves para localStorage
+  private readonly AUTH_STATE_KEY = 'auth_state';
+  private readonly SESSION_VERIFIED_KEY = 'session_verified';
 
   // Signals públicos para componentes
   public readonly authState = signal<AuthState>({
@@ -24,41 +25,80 @@ export class AuthService {
 
   public readonly isAuthenticated = computed(() => this.authState().isAuthenticated);
   public readonly currentUser = computed(() => this.authState().user);
-  public readonly userRole = computed(() => this.authState().user?.role); // Corrigido de 'role' para 'type'
+  public readonly userRole = computed(() => this.authState().user?.type || null);
 
   // Usado para garantir que os guards esperem a verificação inicial
   private authReadySubject = new BehaviorSubject<boolean>(false);
   public authReady$ = this.authReadySubject.asObservable();
 
   constructor() {
-    this.checkAuthenticationStatus();
+    this.initializeAuth();
   }
 
   /**
-   * Verifica o status de autenticação ao carregar a aplicação.
-   * A única forma de saber se temos um cookie HttpOnly válido é
-   * fazendo uma requisição a um endpoint protegido.
-   * (Corresponde ao antigo 'initializeAuthState')
+   * Inicializa autenticação: primeiro tenta carregar do cache, depois valida com backend
    */
-  private checkAuthenticationStatus(): void {
-    // GET /api/auth/me
-    this.http.get<AuthResponse>(`${environment.apiUrl}/auth/me`).pipe(
+  private initializeAuth(): void {
+    // 1. Tenta carregar estado do localStorage (cache)
+    const cachedState = this.loadAuthStateFromCache();
+
+    if (cachedState) {
+      // Restaura estado do cache IMEDIATAMENTE
+      this.updateAuthState(cachedState);
+      console.log('✅ Estado restaurado do cache:', cachedState.user?.email);
+
+      // 2. Verifica se precisa validar com backend
+      const lastVerification = this.getLastVerificationTime();
+      const shouldVerify = !lastVerification || (Date.now() - lastVerification > 5 * 60 * 1000); // 5 minutos
+
+      if (shouldVerify) {
+        // Valida em background sem bloquear a UI
+        this.verifySessionWithBackend();
+      } else {
+        // Sessão verificada recentemente, não precisa chamar backend
+        console.log('✅ Sessão válida (verificada recentemente)');
+        this.authReadySubject.next(true);
+        this.authReadySubject.complete();
+      }
+    } else {
+      // Sem cache, precisa verificar com backend
+      console.log('ℹ️ Sem cache, verificando com backend...');
+      this.verifySessionWithBackend();
+    }
+  }
+
+  /**
+   * Verifica sessão com o backend (valida cookies)
+   */
+  private verifySessionWithBackend(): void {
+    this.http.get<AuthResponse>(`${environment.apiUrl}/users/me`, {
+      withCredentials: true
+    }).pipe(
       tap(response => {
         if (response.success && response.user) {
+          const user = this.mapResponseToUser(response.user);
+
           this.updateAuthState({
             isAuthenticated: true,
-            user: response.user
+            user: user
           });
+
+          // Salva no cache
+          this.saveAuthStateToCache({ isAuthenticated: true, user });
+          this.updateLastVerificationTime();
+
+          console.log('✅ Sessão validada com backend:', user.email);
         } else {
           this.clearAuthState();
         }
       }),
-      catchError(() => {
+      catchError((error) => {
+        console.log('❌ Sessão inválida ou expirada');
         this.clearAuthState();
-        return of(null); // Continua o fluxo
+        return of(null);
       }),
       tap(() => {
-        this.authReadySubject.next(true); // Informa aos guards que a verificação terminou
+        this.authReadySubject.next(true);
         this.authReadySubject.complete();
       })
     ).subscribe();
@@ -68,21 +108,27 @@ export class AuthService {
    * Realiza o login do usuário
    */
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    // POST /api/auth/login
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials)
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials, {
+      withCredentials: true
+    })
       .pipe(
         tap(response => {
           if (!response.success || !response.user) {
             throw new Error(response.message || 'Erro no login');
           }
 
+          const user = this.mapResponseToUser(response.user);
+
           this.updateAuthState({
             isAuthenticated: true,
-            user: response.user,
+            user: user,
           });
 
-          // Redireciona baseado no tipo de usuário (role)
-          this.redirectUser(response.user.role);
+          // Salva no cache
+          this.saveAuthStateToCache({ isAuthenticated: true, user });
+          this.updateLastVerificationTime();
+
+          this.redirectUser(user.type);
         }),
         catchError(error => {
           console.error('Erro no login:', error);
@@ -96,22 +142,27 @@ export class AuthService {
    * Realiza o registro do usuário
    */
   register(data: RegisterRequest): Observable<AuthResponse> {
-    // POST /api/auth/register
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, data)
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, data, {
+      withCredentials: true
+    })
       .pipe(
         tap(response => {
           if (!response.success || !response.user) {
             throw new Error(response.message || 'Erro no registro');
           }
 
-          // O registro no back-end já faz o login (define os cookies)
+          const user = this.mapResponseToUser(response.user);
+
           this.updateAuthState({
             isAuthenticated: true,
-            user: response.user,
+            user: user,
           });
 
-          // Redireciona o novo usuário
-          this.redirectUser(response.user.role);
+          // Salva no cache
+          this.saveAuthStateToCache({ isAuthenticated: true, user });
+          this.updateLastVerificationTime();
+
+          this.redirectUser(user.type);
         }),
         catchError(error => {
           console.error('Erro no registro:', error);
@@ -125,10 +176,11 @@ export class AuthService {
    * Realiza o logout do usuário
    */
   logout(): void {
-    // POST /api/auth/logout
-    this.http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe({
+    this.http.post(`${environment.apiUrl}/auth/logout`, {}, {
+      withCredentials: true
+    }).subscribe({
       next: () => this.handleLogoutSuccess(),
-      error: () => this.handleLogoutSuccess(), // Mesmo com erro, desloga localmente
+      error: () => this.handleLogoutSuccess(),
       complete: () => this.handleLogoutSuccess()
     });
   }
@@ -147,7 +199,7 @@ export class AuthService {
   }
 
   /**
-   * Verifica se o usuário está logado (usado pelos guards)
+   * Verifica se o usuário está logado
    */
   isLoggedIn(): boolean {
     return this.isAuthenticated();
@@ -176,13 +228,24 @@ export class AuthService {
   }
 
   /**
+   * Atualiza perfil do usuário (após edição)
+   */
+  updateUserProfile(user: User): void {
+    this.updateAuthState({
+      ...this.authState(),
+      user
+    });
+    this.saveAuthStateToCache({ isAuthenticated: true, user });
+  }
+
+  /**
    * Redireciona o usuário após o login baseado no seu tipo
    */
   private redirectUser(userType: UserType): void {
     if (userType === 'ADMIN') {
-      this.router.navigate(['/admin/dashboard']); // Rota futura do Admin
+      this.router.navigate(['/admin/dashboard']);
     } else {
-      this.router.navigate(['/painel']); // Rota futura do Comerciante
+      this.router.navigate(['/painel']);
     }
   }
 
@@ -197,10 +260,101 @@ export class AuthService {
    * Limpa o estado de autenticação
    */
   private clearAuthState(): void {
-    // Não precisamos mais limpar cookies, o back-end (logout) faz isso.
     this.updateAuthState({
       isAuthenticated: false,
       user: null,
     });
+
+    // Limpa cache
+    localStorage.removeItem(this.AUTH_STATE_KEY);
+    localStorage.removeItem(this.SESSION_VERIFIED_KEY);
+  }
+
+  // ==================== CACHE NO LOCALSTORAGE ====================
+
+  /**
+   * Salva estado de autenticação no localStorage
+   */
+  private saveAuthStateToCache(state: AuthState): void {
+    try {
+      localStorage.setItem(this.AUTH_STATE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.warn('Não foi possível salvar estado no cache:', error);
+    }
+  }
+
+  /**
+   * Carrega estado de autenticação do localStorage
+   */
+  private loadAuthStateFromCache(): AuthState | null {
+    try {
+      const cached = localStorage.getItem(this.AUTH_STATE_KEY);
+      if (!cached) return null;
+
+      const state = JSON.parse(cached) as AuthState;
+
+      // Reconstrói datas
+      if (state.user) {
+        state.user.createdAt = new Date(state.user.createdAt);
+        state.user.updatedAt = new Date(state.user.updatedAt);
+      }
+
+      return state;
+    } catch (error) {
+      console.warn('Erro ao carregar cache:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Atualiza timestamp da última verificação
+   */
+  private updateLastVerificationTime(): void {
+    localStorage.setItem(this.SESSION_VERIFIED_KEY, Date.now().toString());
+  }
+
+  /**
+   * Obtém timestamp da última verificação
+   */
+  private getLastVerificationTime(): number | null {
+    const timestamp = localStorage.getItem(this.SESSION_VERIFIED_KEY);
+    return timestamp ? parseInt(timestamp, 10) : null;
+  }
+
+  // ==================== HELPERS ====================
+
+  /**
+   * Mapeia resposta da API para modelo User
+   */
+  private mapResponseToUser(userData: any): User {
+    return {
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      type: userData.type,
+      status: userData.documentsStatus,
+      category: this.mapUserTypeToCategory(userData.type),
+      phone: userData.phone,
+      document: userData.cpfCnpj,
+      cpfCnpj: userData.cpfCnpj,
+      salePointId: userData.salePointId || null,
+      documentsStatus: userData.documentsStatus,
+      profilePictureUrl: userData.profilePictureUrl,
+      createdAt: new Date(userData.createdAt),
+      updatedAt: new Date(userData.updatedAt)
+    };
+  }
+
+  /**
+   * Mapeia UserType do backend para Category do frontend
+   */
+  private mapUserTypeToCategory(type: string): 'PRODUTOR_RURAL' | 'COMERCIANTE' | 'ARTESAO' | 'OUTRO' {
+    const mapping: any = {
+      'PRODUTOR_RURAL': 'PRODUTOR_RURAL',
+      'GASTRONOMO': 'COMERCIANTE',
+      'PRODUTOR_ARTESANAL': 'ARTESAO',
+      'ADMIN': 'OUTRO'
+    };
+    return mapping[type] || 'OUTRO';
   }
 }
