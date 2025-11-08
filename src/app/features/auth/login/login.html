@@ -15,7 +15,11 @@
 
     <!-- Error Message -->
     @if (errorMessage) {
-      <p-message severity="error" [text]="errorMessage" styleClass="w-full mb-3"></p-message>
+    <p-message
+      severity="error"
+      [text]="errorMessage"
+      styleClass="w-full mb-3"
+    ></p-message>
     }
 
     <!-- Login Form -->
@@ -29,12 +33,10 @@
           type="email"
           class="w-full"
           [class.ng-invalid]="emailInvalid"
-          [class.ng-dirty]="loginForm.get('email')?.touched"
           placeholder="seu@email.com"
-          autocomplete="email"
         />
         @if (emailInvalid) {
-          <small class="p-error">{{ emailErrorMessage }}</small>
+        <small class="p-error">E-mail inválido</small>
         }
       </div>
 
@@ -50,10 +52,11 @@
           placeholder="••••••"
           styleClass="w-full"
           inputStyleClass="w-full"
-          fluid>
+          fluid
+        >
         </p-password>
         @if (passwordInvalid) {
-          <small class="p-error">{{ passwordErrorMessage }}</small>
+        <small class="p-error">{{ passwordErrorMessage }}</small>
         }
       </div>
 
@@ -62,11 +65,14 @@
           <p-checkbox
             formControlName="rememberMe"
             inputId="rememberMe"
-            [binary]="true">
+            [binary]="true"
+          >
           </p-checkbox>
           <label for="rememberMe">Lembrar de mim</label>
         </div>
-        <a href="#" class="forgot-link" (click)="$event.preventDefault()">Esqueceu a senha?</a>
+        <a href="#" class="forgot-link" (click)="$event.preventDefault()"
+          >Esqueceu a senha?</a
+        >
       </div>
 
       <button
@@ -76,14 +82,19 @@
         icon="pi pi-sign-in"
         [loading]="isLoading"
         [disabled]="isLoading"
-        class="login-button w-full">
-      </button>
+        class="login-button w-full"
+      ></button>
     </form>
 
     <!-- Register Link -->
     <div class="register-link">
       <span>Não possui uma conta? </span>
-      <a href="#" class="register-text" (click)="redirectToRegister(); $event.preventDefault()">Cadastre-se</a>
+      <a
+        href="#"
+        class="register-text"
+        (click)="redirectToRegister(); $event.preventDefault()"
+        >Cadastre-se</a
+      >
     </div>
   </div>
 </div>

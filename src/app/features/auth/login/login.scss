@@ -1,31 +1,10 @@
-// Variables for consistent theming
-$primary-color: #4CAF50;
-$primary-hover: #45a049;
-$error-color: #e74c3c;
-$success-color: #27ae60;
-$text-color: #333;
-$text-muted: #666;
-$border-color: #e0e0e0;
-$background-light: #f8f9fa;
-$shadow-light: rgba(0, 0, 0, 0.1);
-
-// Force light mode globally
-:host {
-  color-scheme: light !important;
-}
-
-// Base reset and layout
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color-scheme: light !important;
-}
+/* Estilos do Login, alinhados com a aparência do register.scss
+  Compatível com login.html sem modificações no HTML.
+*/
 
 .login-page {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   position: relative;
   overflow: hidden;
 }
@@ -34,7 +13,7 @@ $shadow-light: rgba(0, 0, 0, 0.1);
   position: absolute;
   top: 0;
   right: 0;
-  width: 70%;
+  width: 60%; /* Alinhado com o register.scss */
   height: 100%;
   background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)),
               url('/assets/images/login-background.png');
@@ -45,8 +24,8 @@ $shadow-light: rgba(0, 0, 0, 0.1);
 }
 
 .login-container {
-  width: 30%;
-  min-width: 400px;
+  width: 40%; /* Alinhado com o register.scss */
+  min-width: 450px; /* Alinhado com o register.scss */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -55,284 +34,125 @@ $shadow-light: rgba(0, 0, 0, 0.1);
   background: #ffffff;
   z-index: 1;
   position: relative;
+  overflow-y: auto;
 }
 
 .header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 
   .logo {
-    margin-bottom: 1rem;
-
+    margin-bottom: 0.5rem;
     img {
-      max-width: 120px;
+      max-width: 100px;
       height: auto;
-      display: block;
-      margin: 0 auto;
     }
   }
 
   h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: $text-color;
+    font-size: 1.75rem;
+    font-weight: bold;
+    color: #333;
     margin: 0.5rem 0;
-    line-height: 1.2;
   }
 
-  .subtitle {
-    color: $text-muted;
-    font-size: 0.95rem;
+  p {
+    color: #666;
+    font-size: 0.9rem;
     margin: 0;
-    line-height: 1.4;
   }
 }
 
-// Form styling
 .login-form {
   width: 100%;
-  max-width: 400px;
+  max-width: 380px; /* Alinhado com o register.scss */
 
-  .field-group {
+  /* Esta é a correção principal: usa .field, igual ao register.scss e login.html */
+  .field {
     margin-bottom: 1.25rem;
 
-    .field-label {
+    label {
       display: block;
       margin-bottom: 0.5rem;
-      color: $text-color;
+      color: #333;
       font-weight: 500;
       font-size: 0.9rem;
     }
 
-    // Input styling
-    input, .p-password {
+    input, ::ng-deep .p-dropdown, ::ng-deep .p-password {
       width: 100%;
-
-      &.p-invalid {
-        border-color: $error-color !important;
-        box-shadow: 0 0 0 0.2rem rgba($error-color, 0.25) !important;
-      }
     }
 
-    // Error messages
-    .error-message {
+    small.p-error {
       display: block;
-      color: $error-color;
-      font-size: 0.8rem;
       margin-top: 0.25rem;
-      min-height: 1rem;
-
-      span {
-        display: block;
-      }
-    }
-  }
-}
-
-// Remember me and forgot password section
-.remember-forgot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-
-  .remember {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    .remember-label {
-      margin: 0;
-      color: $text-muted;
+      color: #e24c4c;
       font-size: 0.85rem;
     }
   }
 
-  .forgot-link {
-    color: $primary-color;
-    text-decoration: none;
-    font-weight: 500;
-    cursor: pointer;
+  /* Estilos para o bloco "Lembrar de mim" */
+  .remember-forgot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
 
-    &:hover {
-      text-decoration: underline;
-    }
-
-    &:focus {
-      outline: 2px solid $primary-color;
-      outline-offset: 2px;
-      border-radius: 2px;
-    }
-  }
-}
-
-// Submit button
-.login-button {
-  width: 100%;
-  padding: 0.75rem;
-  background: $primary-color;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 1.5rem;
-
-  &:hover:not(:disabled) {
-    background: $primary-hover;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba($primary-color, 0.3);
-  }
-
-  &:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.5);
-  }
-}
-
-// Benefits section
-.benefits-section {
-  width: 100%;
-  max-width: 400px;
-  background: $background-light;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-
-  h3 {
-    font-size: 1rem;
-    color: $text-color;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .benefits-list {
-    list-style: none;
-
-    li {
+    .remember {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-      color: $text-muted;
 
-      .pi-check-circle {
-        color: $success-color;
+      label { /* Estiliza a label do p-checkbox */
+        margin: 0;
+        color: #666;
         font-size: 0.9rem;
+        font-weight: 400; // Sobrescreve o estilo de label do .field
       }
+    }
 
-      &:last-child {
-        margin-bottom: 0;
+    .forgot-link {
+      color: #4CAF50; /* Cor padrão */
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
       }
     }
   }
+
+  .login-button {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.75rem;
+    background: #4CAF50;
+    border-radius: 5px;
+  }
 }
 
-// Register link
+/* Estilos para o link "Cadastre-se" */
 .register-link {
+  margin-top: 1.5rem;
   text-align: center;
   font-size: 0.9rem;
-  color: $text-muted;
+  color: #666;
 
   .register-text {
-    color: $primary-color;
+    color: #4CAF50;
     text-decoration: none;
     font-weight: 500;
-    cursor: pointer;
 
     &:hover {
       text-decoration: underline;
     }
-
-    &:focus {
-      outline: 2px solid $primary-color;
-      outline-offset: 2px;
-      border-radius: 2px;
-    }
   }
 }
 
-// Success message
-.success-message {
-  background: #d4edda;
-  border: 1px solid #c3e6cb;
-  border-radius: 4px;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  color: #155724;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-// Force light mode - override any dark mode preferences
-.login-container {
-  background: #ffffff !important;
-  color: #333 !important;
-}
-
-.header h1 {
-  color: #333 !important;
-}
-
-.header .subtitle {
-  color: #666 !important;
-}
-
-.field-label {
-  color: #333 !important;
-}
-
-.benefits-section {
-  background: #f8f9fa !important;
-  color: #333 !important;
-
-  h3 {
-    color: #333 !important;
-  }
-
-  .benefits-list li {
-    color: #666 !important;
-  }
-}
-
-.register-link {
-  color: #666 !important;
-}
-
-// Ensure all text elements are in light mode
-.remember-label,
-.error-message {
-  color: #666 !important;
-}
-
-.forgot-link, .register-text {
-  color: #4CAF50 !important;
-}
-
-// Responsividade
-@media (max-width: 1024px) {
-  .login-container {
-    width: 40%;
-    min-width: 350px;
-  }
-
-  .background-image {
-    width: 60%;
-  }
-}
-
-@media (max-width: 768px) {
+/* Responsividade (copiada do register.scss) */
+@media (max-width: 968px) {
   .login-page {
     flex-direction: column;
   }
@@ -340,137 +160,17 @@ $shadow-light: rgba(0, 0, 0, 0.1);
   .background-image {
     position: relative;
     width: 100%;
-    height: 200px;
-    order: 2;
+    height: 20vh;
   }
 
   .login-container {
     width: 100%;
     min-width: auto;
-    order: 1;
+    min-height: 80vh;
     padding: 1.5rem;
   }
 
-  .header h1 {
-    font-size: 1.5rem;
-  }
-
-  .benefits-section {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .login-container {
-    padding: 1rem;
-  }
-
   .login-form {
-    max-width: none;
-  }
-
-  .benefits-section {
-    max-width: none;
-  }
-}
-
-// Ensure PrimeNG components stay in light mode
-:host ::ng-deep {
-  .p-inputtext {
-    background: #ffffff !important;
-    border: 1px solid #e0e0e0 !important;
-    color: #333 !important;
-
-    &:focus {
-      background: #ffffff !important;
-      border-color: #4CAF50 !important;
-      color: #333 !important;
-      box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25) !important;
-    }
-
-    &::placeholder {
-      color: #999 !important;
-    }
-  }
-
-  .p-password {
-    .p-password-input {
-      background: #ffffff !important;
-      border: 1px solid #e0e0e0 !important;
-      color: #333 !important;
-
-      &:focus {
-        background: #ffffff !important;
-        border-color: #4CAF50 !important;
-        color: #333 !important;
-        box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25) !important;
-      }
-
-      &::placeholder {
-        color: #999 !important;
-      }
-    }
-  }
-
-  .p-checkbox {
-    .p-checkbox-box {
-      background: #ffffff !important;
-      border: 1px solid #e0e0e0 !important;
-
-      &:focus {
-        box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25) !important;
-      }
-
-      &.p-highlight {
-        background: #4CAF50 !important;
-        border-color: #4CAF50 !important;
-
-        .p-checkbox-icon {
-          color: #ffffff !important;
-        }
-      }
-    }
-  }
-
-  .p-button {
-    background: #4CAF50 !important;
-    border: 1px solid #4CAF50 !important;
-    color: #ffffff !important;
-
-    &:hover:not(:disabled) {
-      background: #45a049 !important;
-      border-color: #45a049 !important;
-    }
-
-    &:disabled {
-      background: #cccccc !important;
-      border-color: #cccccc !important;
-      color: #666 !important;
-    }
-  }
-
-  // Force light mode on any potential dark elements
-  * {
-    color-scheme: light !important;
-  }
-}
-
-// Accessibility improvements
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-// High contrast mode
-@media (prefers-contrast: high) {
-  .login-button {
-    border: 2px solid $text-color;
-  }
-
-  .forgot-link, .register-text {
-    text-decoration: underline;
+    max-width: 100%;
   }
 }
