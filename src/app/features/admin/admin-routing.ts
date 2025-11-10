@@ -13,5 +13,9 @@ export const AdminRoutes: Routes = [
   {
     path: 'sale-points',
     loadComponent: () => import('./sale-points/sale-points-list/sale-points-list').then(c => c.SalePointsList)
+  },
+  {
+    path: 'fairs',
+    loadComponent: () => import('./fairs/fairs-list/fairs-list').then(c => c.FairsList)
   }
 ];

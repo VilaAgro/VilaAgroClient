@@ -1,0 +1,484 @@
+<div class="fairs-management">
+  <p-toast />
+  <p-confirmDialog />
+
+  <!-- Header -->
+  <p-toolbar styleClass="page-toolbar" class="mb-2">
+    <div class="p-toolbar-group-start">
+      <div class="title-section">
+        <h1>Gerenciamento de Feiras e Atrações</h1>
+        <p class="subtitle">
+          Gerencie feiras, atrações e artistas do sistema
+        </p>
+      </div>
+    </div>
+    <div class="p-toolbar-group-end">
+      <button
+        pButton
+        label="Nova Feira"
+        icon="pi pi-plus"
+        class="p-button-success mr-2"
+        (click)="openNewFairDialog()"
+      ></button>
+      <button
+        pButton
+        label="Novo Artista"
+        icon="pi pi-star"
+        class="p-button-info"
+        (click)="openNewArtistDialog()"
+      ></button>
+    </div>
+  </p-toolbar>
+
+  <!-- Tabs -->
+  <p-tabs [(value)]="activeTab">
+    <!-- Tab: Feiras -->
+    <p-tabpanel header="Feiras" [value]="0">
+      <!-- Filtros -->
+      <div class="filters-section">
+        <div class="filter-group">
+          <span class="p-input-icon-left w-full">
+            <input
+              pInputText
+              [(ngModel)]="searchTerm"
+              (input)="applyFilters()"
+              placeholder="Buscar por data ou observações..."
+              class="w-full"
+              fluid
+            />
+          </span>
+        </div>
+
+        <div class="filter-group">
+          <p-select
+            [(ngModel)]="selectedStatus"
+            [options]="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todos os Status"
+            (onChange)="applyFilters()"
+            styleClass="w-full"
+            [showClear]="true"
+          />
+        </div>
+
+        <button
+          pButton
+          label="Limpar Filtros"
+          icon="pi pi-filter-slash"
+          class="p-button-outlined"
+          (click)="clearFilters()"
+        ></button>
+      </div>
+
+      <!-- Tabela de Feiras -->
+      <p-table
+        [value]="filteredFairs"
+        [loading]="loading"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} feiras"
+        styleClass="p-datatable-striped"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="date">Data <p-sortIcon field="date" /></th>
+            <th>Horário</th>
+            <th>Status</th>
+            <th>Comerciantes</th>
+            <th>Observações</th>
+            <th>Ações</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-fair>
+          <tr>
+            <td>
+              <div class="date-badge">
+                <i class="pi pi-calendar"></i>
+                <span>{{ formatDateBR(fair.date) }}</span>
+              </div>
+            </td>
+            <td>{{ fair.startTime }} - {{ fair.endTime }}</td>
+            <td>
+              <p-tag
+                [value]="getStatusBadge(fair.status).label"
+                [severity]="getStatusBadge(fair.status).severity"
+              />
+            </td>
+            <td>{{ fair.expectedMerchants || 0 }}</td>
+            <td>{{ fair.notes || '-' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  pButton
+                  icon="pi pi-music"
+                  class="p-button-rounded p-button-text p-button-info p-button-sm"
+                  (click)="loadAttractions(fair); activeTab = 1"
+                  pTooltip="Ver Atrações"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-rounded p-button-text p-button-sm"
+                  (click)="openEditFairDialog(fair)"
+                  pTooltip="Editar"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                  (click)="deleteFair(fair)"
+                  pTooltip="Excluir"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center">
+              <div class="empty-state">
+                <i class="pi pi-calendar" style="font-size: 3rem; color: #ccc"></i>
+                <p>Nenhuma feira encontrada</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-tabpanel>
+
+    <!-- Tab: Atrações -->
+    <p-tabpanel header="Atrações" [value]="1">
+      @if (selectedFair) {
+        <div class="attractions-header">
+          <div class="fair-info">
+            <h3>Atrações da Feira de {{ formatDateBR(selectedFair.date) }}</h3>
+            <p>{{ selectedFair.startTime }} - {{ selectedFair.endTime }}</p>
+          </div>
+          <button
+            pButton
+            label="Nova Atração"
+            icon="pi pi-plus"
+            class="p-button-success"
+            (click)="openNewAttractionDialog(selectedFair)"
+          ></button>
+        </div>
+
+        <p-table
+          [value]="attractions"
+          [loading]="loadingAttractions"
+          styleClass="p-datatable-striped"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Artista</th>
+              <th>Gênero</th>
+              <th>Horário</th>
+              <th>Ações</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-attraction>
+            <tr>
+              <td>
+                <div class="artist-info">
+                  <i class="pi pi-star"></i>
+                  <span>{{ attraction.artist.name }}</span>
+                </div>
+              </td>
+              <td>{{ attraction.artist.genre || '-' }}</td>
+              <td>{{ attraction.timeStart }} - {{ attraction.timeEnd }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button
+                    pButton
+                    icon="pi pi-pencil"
+                    class="p-button-rounded p-button-text p-button-sm"
+                    (click)="openEditAttractionDialog(attraction)"
+                    pTooltip="Editar"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                    (click)="deleteAttraction(attraction)"
+                    pTooltip="Excluir"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="4" class="text-center">
+                <div class="empty-state">
+                  <i class="pi pi-music" style="font-size: 3rem; color: #ccc"></i>
+                  <p>Nenhuma atração cadastrada para esta feira</p>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="select-fair-message">
+          <i class="pi pi-info-circle"></i>
+          <p>Selecione uma feira na aba "Feiras" para visualizar suas atrações</p>
+        </div>
+      }
+    </p-tabpanel>
+
+    <!-- Tab: Artistas -->
+    <p-tabpanel header="Artistas" [value]="2">
+      <p-table
+        [value]="artists"
+        styleClass="p-datatable-striped"
+        [paginator]="true"
+        [rows]="10"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Nome</th>
+            <th>Gênero Musical</th>
+            <th>Banner</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-artist>
+          <tr>
+            <td>
+              <div class="artist-info">
+                <i class="pi pi-star"></i>
+                <span>{{ artist.name }}</span>
+              </div>
+            </td>
+            <td>{{ artist.genre || '-' }}</td>
+            <td>
+              @if (artist.hasBanner) {
+                <p-tag value="Sim" severity="success" />
+              } @else {
+                <p-tag value="Não" severity="warning" />
+              }
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="3" class="text-center">
+              <div class="empty-state">
+                <i class="pi pi-star" style="font-size: 3rem; color: #ccc"></i>
+                <p>Nenhum artista cadastrado</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-tabpanel>
+  </p-tabs>
+
+  <!-- Dialog: Criar/Editar Feira -->
+  <p-dialog
+    [(visible)]="showFairDialog"
+    [header]="isEditMode ? 'Editar Feira' : 'Nova Feira'"
+    [modal]="true"
+    [style]="{width: '550px'}"
+    [draggable]="false"
+  >
+    <div class="fair-form">
+      <div class="field">
+        <label for="date">Data *</label>
+        <p-datepicker
+          id="date"
+          [(ngModel)]="fairForm.date"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          styleClass="w-full"
+          placeholder="Selecione a data"
+        />
+      </div>
+
+      <div class="field-group">
+        <div class="field">
+          <label for="startTime">Horário Início *</label>
+          <input
+            pInputText
+            id="startTime"
+            [(ngModel)]="fairForm.startTime"
+            type="time"
+            class="w-full"
+          />
+        </div>
+
+        <div class="field">
+          <label for="endTime">Horário Término *</label>
+          <input
+            pInputText
+            id="endTime"
+            [(ngModel)]="fairForm.endTime"
+            type="time"
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="status">Status *</label>
+        <p-select
+          id="status"
+          [(ngModel)]="fairForm.status"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full"
+        />
+      </div>
+
+      <div class="field">
+        <label for="notes">Observações</label>
+        <textarea
+          pInputTextarea
+          id="notes"
+          [(ngModel)]="fairForm.notes"
+          rows="3"
+          class="w-full"
+          placeholder="Informações adicionais sobre a feira..."
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showFairDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        [label]="isEditMode ? 'Atualizar' : 'Criar'"
+        icon="pi pi-check"
+        (click)="saveFair()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Criar/Editar Atração -->
+  <p-dialog
+    [(visible)]="showAttractionDialog"
+    [header]="selectedAttraction ? 'Editar Atração' : 'Nova Atração'"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+  >
+    <div class="attraction-form">
+      <div class="field">
+        <label for="artist">Artista *</label>
+        <p-select
+          id="artist"
+          [(ngModel)]="attractionForm.artistId"
+          [options]="artists"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Selecione um artista"
+          styleClass="w-full"
+          [filter]="true"
+        />
+      </div>
+
+      <div class="field-group">
+        <div class="field">
+          <label for="attractionStart">Horário Início *</label>
+          <input
+            pInputText
+            id="attractionStart"
+            [(ngModel)]="attractionForm.timeStart"
+            type="time"
+            class="w-full"
+          />
+        </div>
+
+        <div class="field">
+          <label for="attractionEnd">Horário Término *</label>
+          <input
+            pInputText
+            id="attractionEnd"
+            [(ngModel)]="attractionForm.timeEnd"
+            type="time"
+            class="w-full"
+          />
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showAttractionDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        [label]="selectedAttraction ? 'Atualizar' : 'Criar'"
+        icon="pi pi-check"
+        (click)="saveAttraction()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Criar Artista -->
+  <p-dialog
+    [(visible)]="showArtistDialog"
+    header="Novo Artista"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+  >
+    <div class="artist-form">
+      <div class="field">
+        <label for="artistName">Nome do Artista *</label>
+        <input
+          pInputText
+          id="artistName"
+          [(ngModel)]="artistForm.name"
+          class="w-full"
+          placeholder="Ex: Banda Sertanejo Raiz"
+        />
+      </div>
+
+      <div class="field">
+        <label for="artistGenre">Gênero Musical</label>
+        <input
+          pInputText
+          id="artistGenre"
+          [(ngModel)]="artistForm.genre"
+          class="w-full"
+          placeholder="Ex: Sertanejo, Forró, MPB..."
+        />
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showArtistDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        label="Criar"
+        icon="pi pi-check"
+        (click)="saveArtist()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>
