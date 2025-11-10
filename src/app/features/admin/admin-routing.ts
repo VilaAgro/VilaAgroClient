@@ -17,5 +17,9 @@ export const AdminRoutes: Routes = [
   {
     path: 'fairs',
     loadComponent: () => import('./fairs/fairs-list/fairs-list').then(c => c.FairsList)
+  },
+  {
+    path: 'attendance',
+    loadComponent: () => import('./attendance/attendance-management').then(c => c.AttendanceManagement)
   }
 ];

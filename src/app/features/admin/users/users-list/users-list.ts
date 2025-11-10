@@ -14,12 +14,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { UserService, UserDTO } from '../../../../core/services/user/user';
-
-interface SalePoint {
-  id: string;
-  number: string;
-  status: string;
-}
+import { SalePointService, SalePointDTO } from '../../../../core/services/sale-point/sale-point';
 
 @Component({
   selector: 'app-users-list',
@@ -44,6 +39,7 @@ interface SalePoint {
 })
 export class UsersList implements OnInit {
   private userService = inject(UserService);
+  private salePointService = inject(SalePointService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
 
@@ -51,6 +47,7 @@ export class UsersList implements OnInit {
   filteredUsers: UserDTO[] = [];
 
   loading = false;
+  loadingSalePoints = false;
 
   showCreateUserDialog = false;
   userForm = {
@@ -73,7 +70,7 @@ export class UsersList implements OnInit {
   selectedUser: UserDTO | null = null;
 
   // Sale Points
-  availableSalePoints: SalePoint[] = [];
+  availableSalePoints: SalePointDTO[] = [];
   selectedSalePointId: string | null = null;
 
   // Rejection
@@ -119,13 +116,24 @@ export class UsersList implements OnInit {
   }
 
   loadSalePoints() {
-    // TODO: Implementar serviço de pontos de venda
-    // Por enquanto, mock data
-    this.availableSalePoints = [
-      { id: '1', number: '001', status: 'Disponível' },
-      { id: '2', number: '002', status: 'Disponível' },
-      { id: '3', number: '003', status: 'Disponível' }
-    ];
+    this.loadingSalePoints = true;
+    this.salePointService.getAllSalePoints().subscribe({
+      next: (salePoints) => {
+        // Filtra apenas pontos sem usuário alocado (disponíveis)
+        this.availableSalePoints = salePoints.filter(sp => !sp.allocatedUser);
+        this.loadingSalePoints = false;
+      },
+      error: (error) => {
+        console.error('Erro ao carregar pontos de venda:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Não foi possível carregar os pontos de venda'
+        });
+        this.loadingSalePoints = false;
+        this.availableSalePoints = [];
+      }
+    });
   }
 
   applyFilters() {
@@ -184,6 +192,62 @@ export class UsersList implements OnInit {
     });
   }
 
+  activateUser(user: UserDTO) {
+    this.confirmationService.confirm({
+      message: `Tem certeza que deseja ativar ${user.name}? O comerciante poderá participar das feiras.`,
+      header: 'Confirmar Ativação',
+      icon: 'pi pi-check-circle',
+      acceptButtonStyleClass: 'p-button-success',
+      accept: () => {
+        this.userService.updateUserStatus(user.id, 'ACTIVE').subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Sucesso',
+              detail: 'Comerciante ativado com sucesso'
+            });
+            this.loadUsers();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Erro',
+              detail: 'Não foi possível ativar o comerciante'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  deactivateUser(user: UserDTO) {
+    this.confirmationService.confirm({
+      message: `Tem certeza que deseja desativar ${user.name}? O comerciante não poderá mais participar das feiras.`,
+      header: 'Confirmar Desativação',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-warning',
+      accept: () => {
+        this.userService.updateUserStatus(user.id, 'INACTIVE').subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Sucesso',
+              detail: 'Comerciante desativado com sucesso'
+            });
+            this.loadUsers();
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Erro',
+              detail: 'Não foi possível desativar o comerciante'
+            });
+          }
+        });
+      }
+    });
+  }
+
   rejectUser(user: UserDTO) {
     this.selectedUser = user;
     this.rejectionReason = '';
@@ -220,12 +284,14 @@ export class UsersList implements OnInit {
   allocateSalePoint(user: UserDTO) {
     this.selectedUser = user;
     this.selectedSalePointId = null;
+    this.loadSalePoints(); // Recarrega pontos disponíveis
     this.showSalePointDialog = true;
   }
 
   changeSalePoint(user: UserDTO) {
     this.selectedUser = user;
     this.selectedSalePointId = user.salePointId || null;
+    this.loadSalePoints(); // Recarrega pontos disponíveis
     this.showSalePointDialog = true;
   }
 
@@ -243,6 +309,7 @@ export class UsersList implements OnInit {
         });
         this.showSalePointDialog = false;
         this.loadUsers();
+        this.loadSalePoints(); // Atualiza lista de pontos disponíveis
       },
       error: (error) => {
         this.messageService.add({
@@ -283,6 +350,10 @@ export class UsersList implements OnInit {
   }
 
   // Helpers
+  getCountByStatus(status: string): number {
+    return this.users.filter(u => u.documentsStatus === status && u.type !== 'ADMIN').length;
+  }
+
   getUserTypeLabel(type: string): string {
     const labels: any = {
       'PRODUTOR_RURAL': 'Produtor Rural',
@@ -329,7 +400,7 @@ export class UsersList implements OnInit {
 
   getSalePointNumber(salePointId: string): string {
     const point = this.availableSalePoints.find(p => p.id === salePointId);
-    return point ? point.number : salePointId;
+    return point ? point.name : salePointId;
   }
 
   formatDate(date: string): string {

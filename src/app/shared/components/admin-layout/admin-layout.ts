@@ -92,9 +92,12 @@ export class AdminLayout {
     // Seu método buildMenu() original (sem alterações)
     return [
       {
-        label: 'Visão Geral',
+        label: 'Dashboard',
         icon: 'pi pi-home',
         routerLink: '/admin/dashboard'
+      },
+      {
+        separator: true
       },
       {
         label: 'Gerenciamento',
@@ -128,21 +131,6 @@ export class AdminLayout {
             label: 'Comunicados',
             icon: 'pi pi-bullhorn',
             routerLink: '/admin/statements'
-          }
-        ]
-      },
-      {
-        label: 'Sua Conta',
-        items: [
-          {
-            label: 'Meu Perfil',
-            icon: 'pi pi-user',
-            command: () => this.router.navigate(['/admin/profile'])
-          },
-          {
-            label: 'Sair',
-            icon: 'pi pi-sign-out',
-            command: () => this.logout()
           }
         ]
       }

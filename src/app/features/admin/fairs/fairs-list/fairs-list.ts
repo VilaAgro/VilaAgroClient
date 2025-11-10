@@ -15,7 +15,11 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { TextareaModule } from 'primeng/textarea';
 import { TabsModule } from 'primeng/tabs';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { FairService, FairDTO, AttractionDTO } from '../../../../core/services/fair/fair';
+import {
+  FairService,
+  FairDTO,
+  AttractionDTO,
+} from '../../../../core/services/fair/fair';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../../environments/environment';
 
@@ -43,11 +47,11 @@ interface ArtistDTO {
     SelectModule,
     DatePickerModule,
     TextareaModule,
-    TabsModule
+    TabsModule,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './fairs-list.html',
-  styleUrls: ['./fairs-list.scss']
+  styleUrls: ['./fairs-list.scss'],
 })
 export class FairsList implements OnInit {
   private fairService = inject(FairService);
@@ -59,14 +63,24 @@ export class FairsList implements OnInit {
   fairs: FairDTO[] = [];
   filteredFairs: FairDTO[] = [];
   artists: ArtistDTO[] = [];
+  filteredArtists: ArtistDTO[] = [];
   attractions: AttractionDTO[] = [];
+  filteredAttractions: AttractionDTO[] = [];
 
   loading = false;
   loadingAttractions = false;
+  loadingArtists = false;
 
   // Filtros
   searchTerm = '';
   selectedStatus: string | null = null;
+
+  // Filtros de Atrações
+  attractionSearchTerm = '';
+  selectedFairFilter: string | null = null;
+
+  // Filtros de Artistas
+  artistSearchTerm = '';
 
   // Dialogs
   showFairDialog = false;
@@ -76,6 +90,7 @@ export class FairsList implements OnInit {
 
   selectedFair: FairDTO | null = null;
   selectedAttraction: AttractionDTO | null = null;
+  selectedArtist: ArtistDTO | null = null;
 
   // Formulários
   fairForm = {
@@ -83,27 +98,34 @@ export class FairsList implements OnInit {
     startTime: '',
     endTime: '',
     notes: '',
-    status: 'scheduled' as 'scheduled' | 'confirmed' | 'cancelled' | 'completed'
+    status: 'scheduled' as
+      | 'scheduled'
+      | 'confirmed'
+      | 'cancelled'
+      | 'completed',
   };
 
   attractionForm = {
     artistId: null as string | null,
     fairId: null as string | null,
     timeStart: '',
-    timeEnd: ''
+    timeEnd: '',
   };
 
   artistForm = {
     name: '',
-    genre: ''
+    genre: '',
   };
+
+  // Arquivo selecionado para o artista (banner)
+  selectedArtistFile: File | null = null;
 
   // Opções
   statusOptions = [
     { label: 'Agendada', value: 'scheduled' },
     { label: 'Confirmada', value: 'confirmed' },
     { label: 'Cancelada', value: 'cancelled' },
-    { label: 'Concluída', value: 'completed' }
+    { label: 'Concluída', value: 'completed' },
   ];
 
   // Tab ativa
@@ -112,6 +134,7 @@ export class FairsList implements OnInit {
   ngOnInit() {
     this.loadFairs();
     this.loadArtists();
+    this.loadAllAttractions();
   }
 
   // ========== FEIRAS ==========
@@ -120,8 +143,11 @@ export class FairsList implements OnInit {
     this.loading = true;
     this.fairService.getAllFairs().subscribe({
       next: (fairs: any[]) => {
-        this.fairs = fairs.sort((a, b) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
+        this.fairs = fairs.map((fair: any) => ({
+          ...fair,
+          dateFormatted: `${this.formatDateBR(fair.date)} - ${fair.startTime} às ${fair.endTime}`
+        })).sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         this.filteredFairs = this.fairs;
         this.loading = false;
@@ -131,10 +157,10 @@ export class FairsList implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Erro',
-          detail: 'Não foi possível carregar as feiras'
+          detail: 'Não foi possível carregar as feiras',
         });
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -146,7 +172,7 @@ export class FairsList implements OnInit {
       startTime: '08:00',
       endTime: '14:00',
       notes: '',
-      status: 'scheduled'
+      status: 'scheduled',
     };
     this.showFairDialog = true;
   }
@@ -159,17 +185,21 @@ export class FairsList implements OnInit {
       startTime: fair.startTime,
       endTime: fair.endTime,
       notes: fair.notes || '',
-      status: fair.status
+      status: fair.status,
     };
     this.showFairDialog = true;
   }
 
   saveFair() {
-    if (!this.fairForm.date || !this.fairForm.startTime || !this.fairForm.endTime) {
+    if (
+      !this.fairForm.date ||
+      !this.fairForm.startTime ||
+      !this.fairForm.endTime
+    ) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Atenção',
-        detail: 'Preencha todos os campos obrigatórios'
+        detail: 'Preencha todos os campos obrigatórios',
       });
       return;
     }
@@ -179,7 +209,7 @@ export class FairsList implements OnInit {
       startTime: this.fairForm.startTime,
       endTime: this.fairForm.endTime,
       notes: this.fairForm.notes,
-      status: this.fairForm.status
+      status: this.fairForm.status,
     };
 
     if (this.isEditMode && this.selectedFair) {
@@ -188,7 +218,7 @@ export class FairsList implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Sucesso',
-            detail: 'Feira atualizada com sucesso'
+            detail: 'Feira atualizada com sucesso',
           });
           this.showFairDialog = false;
           this.loadFairs();
@@ -197,9 +227,10 @@ export class FairsList implements OnInit {
           this.messageService.add({
             severity: 'error',
             summary: 'Erro',
-            detail: error.error?.message || 'Não foi possível atualizar a feira'
+            detail:
+              error.error?.message || 'Não foi possível atualizar a feira',
           });
-        }
+        },
       });
     } else {
       this.fairService.createFair(fairData).subscribe({
@@ -207,7 +238,7 @@ export class FairsList implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Sucesso',
-            detail: 'Feira criada com sucesso'
+            detail: 'Feira criada com sucesso',
           });
           this.showFairDialog = false;
           this.loadFairs();
@@ -216,16 +247,18 @@ export class FairsList implements OnInit {
           this.messageService.add({
             severity: 'error',
             summary: 'Erro',
-            detail: error.error?.message || 'Não foi possível criar a feira'
+            detail: error.error?.message || 'Não foi possível criar a feira',
           });
-        }
+        },
       });
     }
   }
 
   deleteFair(fair: FairDTO) {
     this.confirmationService.confirm({
-      message: `Tem certeza que deseja excluir a feira de ${this.formatDateBR(fair.date)}?`,
+      message: `Tem certeza que deseja excluir a feira de ${this.formatDateBR(
+        fair.date
+      )}?`,
       header: 'Confirmar Exclusão',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
@@ -235,7 +268,7 @@ export class FairsList implements OnInit {
             this.messageService.add({
               severity: 'success',
               summary: 'Sucesso',
-              detail: 'Feira excluída com sucesso'
+              detail: 'Feira excluída com sucesso',
             });
             this.loadFairs();
           },
@@ -243,15 +276,40 @@ export class FairsList implements OnInit {
             this.messageService.add({
               severity: 'error',
               summary: 'Erro',
-              detail: error.error?.message || 'Não foi possível excluir a feira'
+              detail:
+                error.error?.message || 'Não foi possível excluir a feira',
             });
-          }
+          },
         });
-      }
+      },
     });
   }
 
   // ========== ATRAÇÕES ==========
+
+  loadAllAttractions() {
+    this.loadingAttractions = true;
+    this.http
+      .get<AttractionDTO[]>(`${environment.apiUrl}/attractions`, {
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (attractions: AttractionDTO[]) => {
+          this.attractions = attractions;
+          this.filteredAttractions = attractions;
+          this.loadingAttractions = false;
+        },
+        error: (error: any) => {
+          console.error('Erro ao carregar atrações:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: 'Não foi possível carregar as atrações',
+          });
+          this.loadingAttractions = false;
+        },
+      });
+  }
 
   loadAttractions(fair: FairDTO) {
     this.selectedFair = fair;
@@ -267,21 +325,23 @@ export class FairsList implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Erro',
-          detail: 'Não foi possível carregar as atrações'
+          detail: 'Não foi possível carregar as atrações',
         });
         this.loadingAttractions = false;
-      }
+      },
     });
   }
 
-  openNewAttractionDialog(fair: FairDTO) {
-    this.selectedFair = fair;
+  openNewAttractionDialog(fair?: FairDTO) {
+    if (fair) {
+      this.selectedFair = fair;
+    }
     this.selectedAttraction = null;
     this.attractionForm = {
       artistId: null,
-      fairId: fair.id,
+      fairId: fair?.id || null,
       timeStart: '10:00',
-      timeEnd: '12:00'
+      timeEnd: '12:00',
     };
     this.showAttractionDialog = true;
   }
@@ -292,18 +352,22 @@ export class FairsList implements OnInit {
       artistId: attraction.artist.id,
       fairId: attraction.fair.id,
       timeStart: attraction.timeStart,
-      timeEnd: attraction.timeEnd
+      timeEnd: attraction.timeEnd,
     };
     this.showAttractionDialog = true;
   }
 
   saveAttraction() {
-    if (!this.attractionForm.artistId || !this.attractionForm.fairId ||
-        !this.attractionForm.timeStart || !this.attractionForm.timeEnd) {
+    if (
+      !this.attractionForm.artistId ||
+      !this.attractionForm.fairId ||
+      !this.attractionForm.timeStart ||
+      !this.attractionForm.timeEnd
+    ) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Atenção',
-        detail: 'Preencha todos os campos'
+        detail: 'Preencha todos os campos',
       });
       return;
     }
@@ -312,7 +376,7 @@ export class FairsList implements OnInit {
       artistId: this.attractionForm.artistId,
       fairId: this.attractionForm.fairId,
       timeStart: this.attractionForm.timeStart,
-      timeEnd: this.attractionForm.timeEnd
+      timeEnd: this.attractionForm.timeEnd,
     };
 
     const endpoint = this.selectedAttraction
@@ -321,25 +385,27 @@ export class FairsList implements OnInit {
 
     const method = this.selectedAttraction ? 'put' : 'post';
 
-    this.http[method](endpoint, attractionData, { withCredentials: true }).subscribe({
+    this.http[method](endpoint, attractionData, {
+      withCredentials: true,
+    }).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
           summary: 'Sucesso',
-          detail: `Atração ${this.selectedAttraction ? 'atualizada' : 'criada'} com sucesso`
+          detail: `Atração ${
+            this.selectedAttraction ? 'atualizada' : 'criada'
+          } com sucesso`,
         });
         this.showAttractionDialog = false;
-        if (this.selectedFair) {
-          this.loadAttractions(this.selectedFair);
-        }
+        this.loadAllAttractions();
       },
       error: (error) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Erro',
-          detail: error.error?.message || 'Não foi possível salvar a atração'
+          detail: error.error?.message || 'Não foi possível salvar a atração',
         });
-      }
+      },
     });
   }
 
@@ -350,50 +416,63 @@ export class FairsList implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.http.delete(`${environment.apiUrl}/attractions/${attraction.id}`, {
-          withCredentials: true
-        }).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Sucesso',
-              detail: 'Atração excluída com sucesso'
-            });
-            if (this.selectedFair) {
-              this.loadAttractions(this.selectedFair);
-            }
-          },
-          error: (error) => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Erro',
-              detail: 'Não foi possível excluir a atração'
-            });
-          }
-        });
-      }
+        this.http
+          .delete(`${environment.apiUrl}/attractions/${attraction.id}`, {
+            withCredentials: true,
+          })
+          .subscribe({
+            next: () => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Sucesso',
+                detail: 'Atração excluída com sucesso',
+              });
+              this.loadAllAttractions();
+            },
+            error: (error) => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível excluir a atração',
+              });
+            },
+          });
+      },
     });
   }
 
   // ========== ARTISTAS ==========
 
   loadArtists() {
-    this.http.get<ArtistDTO[]>(`${environment.apiUrl}/artists`, {
-      withCredentials: true
-    }).subscribe({
-      next: (artists) => {
-        this.artists = artists;
-      },
-      error: (error) => {
-        console.error('Erro ao carregar artistas:', error);
-      }
-    });
+    this.loadingArtists = true;
+    this.http
+      .get<ArtistDTO[]>(`${environment.apiUrl}/artists`, {
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (artists) => {
+          this.artists = artists;
+          this.filteredArtists = artists;
+          this.loadingArtists = false;
+        },
+        error: (error) => {
+          console.error('Erro ao carregar artistas:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: 'Não foi possível carregar os artistas',
+          });
+          this.loadingArtists = false;
+        },
+      });
   }
 
   openNewArtistDialog() {
+    this.selectedArtist = null;
+    this.selectedArtistFile = null;
     this.artistForm = {
       name: '',
-      genre: ''
+      genre: '',
     };
     this.showArtistDialog = true;
   }
@@ -403,47 +482,112 @@ export class FairsList implements OnInit {
       this.messageService.add({
         severity: 'warn',
         summary: 'Atenção',
-        detail: 'Nome do artista é obrigatório'
+        detail: 'Nome do artista é obrigatório',
       });
       return;
     }
 
     const formData = new FormData();
     formData.append('name', this.artistForm.name);
-    formData.append('genre', this.artistForm.genre);
+    formData.append('genre', this.artistForm.genre || '');
 
-    this.http.post(`${environment.apiUrl}/artists`, formData, {
-      withCredentials: true
+    // Se houver arquivo selecionado, adiciona ao FormData
+    if (this.selectedArtistFile) {
+      formData.append('file', this.selectedArtistFile);
+    }
+
+    const endpoint = this.selectedArtist
+      ? `${environment.apiUrl}/artists/${this.selectedArtist.id}`
+      : `${environment.apiUrl}/artists`;
+
+    const method = this.selectedArtist ? 'put' : 'post';
+
+    this.http[method](endpoint, formData, {
+      withCredentials: true,
     }).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
           summary: 'Sucesso',
-          detail: 'Artista criado com sucesso'
+          detail: `Artista ${this.selectedArtist ? 'atualizado' : 'criado'} com sucesso`,
         });
         this.showArtistDialog = false;
+        this.selectedArtistFile = null;
+        this.selectedArtist = null;
         this.loadArtists();
       },
       error: (error) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Erro',
-          detail: 'Não foi possível criar o artista'
+          detail: error.error?.message || `Não foi possível ${this.selectedArtist ? 'atualizar' : 'criar'} o artista`,
         });
-      }
+      },
+    });
+  }
+
+  onArtistFileSelect(event: any) {
+    // Support both PrimeNG FileUpload event (event.files) and native input change event (event.target.files)
+    const file = event?.files?.[0] ?? event?.target?.files?.[0] ?? null;
+    if (file) {
+      this.selectedArtistFile = file;
+    } else {
+      this.selectedArtistFile = null;
+    }
+  }
+
+  openEditArtistDialog(artist: ArtistDTO) {
+    this.selectedArtist = artist;
+    this.artistForm = {
+      name: artist.name,
+      genre: artist.genre || '',
+    };
+    this.showArtistDialog = true;
+  }
+
+  deleteArtist(artist: ArtistDTO) {
+    this.confirmationService.confirm({
+      message: `Tem certeza que deseja excluir o artista ${artist.name}?`,
+      header: 'Confirmar Exclusão',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.http
+          .delete(`${environment.apiUrl}/artists/${artist.id}`, {
+            withCredentials: true,
+          })
+          .subscribe({
+            next: () => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Sucesso',
+                detail: 'Artista excluído com sucesso',
+              });
+              this.loadArtists();
+            },
+            error: (error) => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível excluir o artista',
+              });
+            },
+          });
+      },
     });
   }
 
   // ========== FILTROS ==========
 
   applyFilters() {
-    this.filteredFairs = this.fairs.filter(fair => {
-      const matchesSearch = !this.searchTerm ||
+    this.filteredFairs = this.fairs.filter((fair) => {
+      const matchesSearch =
+        !this.searchTerm ||
         fair.notes?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         this.formatDateBR(fair.date).includes(this.searchTerm);
 
-      const matchesStatus = !this.selectedStatus ||
-        fair.status === this.selectedStatus;
+      const matchesStatus =
+        !this.selectedStatus || fair.status === this.selectedStatus;
 
       return matchesSearch && matchesStatus;
     });
@@ -453,6 +597,51 @@ export class FairsList implements OnInit {
     this.searchTerm = '';
     this.selectedStatus = null;
     this.applyFilters();
+  }
+
+  applyAttractionFilters() {
+    this.filteredAttractions = this.attractions.filter((attraction) => {
+      const matchesSearch =
+        !this.attractionSearchTerm ||
+        attraction.artist.name
+          .toLowerCase()
+          .includes(this.attractionSearchTerm.toLowerCase()) ||
+        attraction.artist.genre
+          ?.toLowerCase()
+          .includes(this.attractionSearchTerm.toLowerCase());
+
+      const matchesFair =
+        !this.selectedFairFilter ||
+        attraction.fair.id === this.selectedFairFilter;
+
+      return matchesSearch && matchesFair;
+    });
+  }
+
+  clearAttractionFilters() {
+    this.attractionSearchTerm = '';
+    this.selectedFairFilter = null;
+    this.applyAttractionFilters();
+  }
+
+  applyArtistFilters() {
+    this.filteredArtists = this.artists.filter((artist) => {
+      const matchesSearch =
+        !this.artistSearchTerm ||
+        artist.name
+          .toLowerCase()
+          .includes(this.artistSearchTerm.toLowerCase()) ||
+        artist.genre
+          ?.toLowerCase()
+          .includes(this.artistSearchTerm.toLowerCase());
+
+      return matchesSearch;
+    });
+  }
+
+  clearArtistFilters() {
+    this.artistSearchTerm = '';
+    this.applyArtistFilters();
   }
 
   // ========== HELPERS ==========
@@ -471,10 +660,10 @@ export class FairsList implements OnInit {
 
   getStatusBadge(status: string): { severity: string; label: string } {
     const badges: any = {
-      'scheduled': { severity: 'info', label: 'Agendada' },
-      'confirmed': { severity: 'success', label: 'Confirmada' },
-      'cancelled': { severity: 'danger', label: 'Cancelada' },
-      'completed': { severity: 'secondary', label: 'Concluída' }
+      scheduled: { severity: 'info', label: 'Agendada' },
+      confirmed: { severity: 'success', label: 'Confirmada' },
+      cancelled: { severity: 'danger', label: 'Cancelada' },
+      completed: { severity: 'secondary', label: 'Concluída' },
     };
     return badges[status] || { severity: 'info', label: status };
   }

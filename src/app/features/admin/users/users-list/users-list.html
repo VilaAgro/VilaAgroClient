@@ -23,6 +23,51 @@
     </div>
   </p-toolbar>
 
+  <!-- Status Overview -->
+  <div class="status-overview">
+    <div class="status-card pending">
+      <div class="icon">
+        <i class="pi pi-clock"></i>
+      </div>
+      <div class="info">
+        <span class="label">Pendentes</span>
+        <span class="count">{{ getCountByStatus('PENDING') }}</span>
+      </div>
+    </div>
+
+    <div class="status-card approved">
+      <div class="icon">
+        <i class="pi pi-check"></i>
+      </div>
+      <div class="info">
+        <span class="label">Aprovados</span>
+        <span class="count">{{ getCountByStatus('APPROVED') }}</span>
+        <small class="help-text">Aguardando ativação</small>
+      </div>
+    </div>
+
+    <div class="status-card active">
+      <div class="icon">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="info">
+        <span class="label">Ativos</span>
+        <span class="count">{{ getCountByStatus('ACTIVE') }}</span>
+        <small class="help-text">Podem participar de feiras</small>
+      </div>
+    </div>
+
+    <div class="status-card inactive">
+      <div class="icon">
+        <i class="pi pi-ban"></i>
+      </div>
+      <div class="info">
+        <span class="label">Inativos</span>
+        <span class="count">{{ getCountByStatus('INACTIVE') }}</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Filtros -->
   <div class="filters-section">
     <div class="filter-group">
@@ -160,7 +205,29 @@
               (click)="rejectUser(user)"
               pTooltip="Reprovar Documentos"
             ></button>
-            } @if (user.documentsStatus === 'APPROVED' && !user.salePointId) {
+            }
+
+            @if (user.documentsStatus === 'APPROVED' && user.type !== 'ADMIN') {
+            <button
+              pButton
+              icon="pi pi-check-circle"
+              class="p-button-rounded p-button-text p-button-success p-button-sm"
+              (click)="activateUser(user)"
+              pTooltip="Ativar Comerciante"
+            ></button>
+            }
+
+            @if (user.documentsStatus === 'ACTIVE' && user.type !== 'ADMIN') {
+            <button
+              pButton
+              icon="pi pi-ban"
+              class="p-button-rounded p-button-text p-button-warning p-button-sm"
+              (click)="deactivateUser(user)"
+              pTooltip="Desativar Comerciante"
+            ></button>
+            }
+
+            @if ((user.documentsStatus === 'APPROVED' || user.documentsStatus === 'ACTIVE') && !user.salePointId && user.type !== 'ADMIN') {
             <button
               pButton
               icon="pi pi-map-marker"
@@ -168,7 +235,9 @@
               (click)="allocateSalePoint(user)"
               pTooltip="Alocar Ponto de Venda"
             ></button>
-            } @if (user.salePointId) {
+            }
+
+            @if (user.salePointId && user.type !== 'ADMIN') {
             <button
               pButton
               icon="pi pi-map-marker"
@@ -207,8 +276,9 @@
     [(visible)]="showUserDialog"
     [header]="'Detalhes do Usuário'"
     [modal]="true"
-    [style]="{width: '600px'}"
+    [style]="{width: '700px'}"
     [draggable]="false"
+    [resizable]="false"
   >
     @if (selectedUser) {
     <div class="user-details">
@@ -286,36 +356,88 @@
   <!-- Dialog: Alocar/Alterar Ponto de Venda -->
   <p-dialog
     [(visible)]="showSalePointDialog"
-    [header]="'Alocar Ponto de Venda'"
+    [header]="selectedUser?.salePointId ? 'Alterar Ponto de Venda' : 'Alocar Ponto de Venda'"
     [modal]="true"
-    [style]="{width: '500px'}"
+    [style]="{width: '700px'}"
+    styleClass="sale-point-dialog"
     [draggable]="false"
+    [resizable]="false"
   >
     @if (selectedUser) {
     <div class="sale-point-form">
-      <p class="mb-3">
-        Selecione um ponto de venda para
-        <strong>{{ selectedUser.name }}</strong>
-      </p>
+      <div class="user-info-box">
+        <div class="info-row">
+          <i class="pi pi-user"></i>
+          <div class="info-content">
+            <label>Comerciante</label>
+            <strong>{{ selectedUser.name }}</strong>
+          </div>
+        </div>
+        @if (selectedUser.salePointId) {
+          <div class="info-row current-point">
+            <i class="pi pi-map-marker"></i>
+            <div class="info-content">
+              <label>Ponto Atual</label>
+              <strong>{{ getSalePointNumber(selectedUser.salePointId) }}</strong>
+            </div>
+          </div>
+        }
+      </div>
 
       <div class="field">
-        <label for="salePoint">Ponto de Venda:</label>
+        <label for="salePoint">
+          {{ selectedUser.salePointId ? 'Novo Ponto de Venda' : 'Ponto de Venda' }} *
+        </label>
+        @if (loadingSalePoints) {
+          <div class="loading-message">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Carregando pontos de venda...</span>
+          </div>
+        }
         <p-select
           id="salePoint"
           [(ngModel)]="selectedSalePointId"
           [options]="availableSalePoints"
-          optionLabel="number"
+          optionLabel="name"
           optionValue="id"
           placeholder="Selecione um ponto"
           styleClass="w-full"
+          [disabled]="loadingSalePoints || availableSalePoints.length === 0"
+          [filter]="true"
+          filterPlaceholder="Buscar ponto..."
+          appendTo="body"
         >
           <ng-template pTemplate="selectedItem" let-point>
-            Ponto {{ point.number }} - {{ point.status }}
+            <div class="selected-point">
+              <i class="pi pi-map-marker"></i>
+              <span>{{ point.name }}</span>
+            </div>
           </ng-template>
           <ng-template pTemplate="item" let-point>
-            Ponto {{ point.number }} - {{ point.status }}
+            <div class="sale-point-option">
+              <i class="pi pi-map-marker"></i>
+              <div class="point-details">
+                <span class="point-name">{{ point.name }}</span>
+                @if (!point.allocatedUser) {
+                  <span class="available-badge">
+                    <i class="pi pi-check-circle"></i>
+                    Disponível
+                  </span>
+                }
+              </div>
+            </div>
           </ng-template>
         </p-select>
+        @if (availableSalePoints.length === 0 && !loadingSalePoints) {
+          <small class="p-error">
+            <i class="pi pi-exclamation-circle"></i>
+            Nenhum ponto de venda disponível. Todos os pontos já estão alocados.
+          </small>
+        } @else if (!loadingSalePoints) {
+          <small class="p-text-secondary">
+            {{ availableSalePoints.length }} {{ availableSalePoints.length === 1 ? 'ponto disponível' : 'pontos disponíveis' }}
+          </small>
+        }
       </div>
     </div>
     }
@@ -343,8 +465,9 @@
     [(visible)]="showRejectDialog"
     header="Reprovar Documentos"
     [modal]="true"
-    [style]="{width: '500px'}"
+    [style]="{width: '550px'}"
     [draggable]="false"
+    [resizable]="false"
   >
     <div class="reject-form">
       <p class="mb-3">
@@ -389,8 +512,9 @@
     [(visible)]="showCreateUserDialog"
     header="Criar Novo Usuário"
     [modal]="true"
-    [style]="{width: '600px'}"
+    [style]="{width: '700px'}"
     [draggable]="false"
+    [resizable]="false"
   >
     title-section
   </p-dialog>

@@ -2,23 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-
-export interface AbsenceDTO {
-  id: string;
-  userId: string;
-  date: string;
-  type: 'NOTIFIED' | 'REGISTERED';
-  isAccepted: boolean;
-  justification?: any;
-  createdAt: string;
-}
-
-export interface AttendanceSummaryDTO {
-  totalAbsences: number;
-  justifiedAbsences: number;
-  pendingJustifications: number;
-  unjustifiedAbsences: number;
-}
+import {
+  AbsenceDTO,
+  AttendanceSummaryDTO,
+  RegisterAbsencesRequest,
+  ReviewJustificationRequest,
+} from '../../models/attendance.model';
 
 @Injectable({
   providedIn: 'root'
@@ -30,11 +19,17 @@ export class AttendanceService {
   /**
    * Registra faltas (Admin)
    */
-  registerAbsences(date: string, userIds: string[]): Observable<AbsenceDTO[]> {
-    return this.http.post<AbsenceDTO[]>(`${this.baseUrl}/absences`, {
-      date,
-      userIds
-    }, {
+  registerAbsences(request: RegisterAbsencesRequest): Observable<AbsenceDTO[]> {
+    return this.http.post<AbsenceDTO[]>(`${this.baseUrl}/absences`, request, {
+      withCredentials: true
+    });
+  }
+
+  /**
+   * Lista todas as faltas de todos os usuários (Admin)
+   */
+  getAllAbsences(): Observable<AbsenceDTO[]> {
+    return this.http.get<AbsenceDTO[]>(`${this.baseUrl}/absences`, {
       withCredentials: true
     });
   }
@@ -84,10 +79,13 @@ export class AttendanceService {
   /**
    * Revisa justificativa (Admin)
    */
-  reviewJustification(id: string, isApproved: boolean, reason?: string): Observable<AbsenceDTO> {
+  reviewJustification(
+    id: string,
+    request: ReviewJustificationRequest
+  ): Observable<AbsenceDTO> {
     return this.http.put<AbsenceDTO>(
       `${this.baseUrl}/justifications/${id}/review`,
-      { isApproved, reason },
+      request,
       { withCredentials: true }
     );
   }
@@ -104,10 +102,17 @@ export class AttendanceService {
   /**
    * Notifica ausência futura
    */
-  notifyAbsence(date: string, reason: string): Observable<AbsenceDTO> {
+  notifyAbsence(date: string, reason: string, file?: File): Observable<AbsenceDTO> {
+    const formData = new FormData();
+    formData.append('date', date);
+    formData.append('reason', reason);
+    if (file) {
+      formData.append('file', file);
+    }
+
     return this.http.post<AbsenceDTO>(
       `${this.baseUrl}/absence/notify`,
-      { date, reason },
+      formData,
       { withCredentials: true }
     );
   }

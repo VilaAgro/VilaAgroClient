@@ -65,6 +65,7 @@ export class SalePointsList implements OnInit {
   // Alocação
   availableUsers: UserDTO[] = [];
   selectedUserId: string | null = null;
+  loadingUsers = false;
 
   ngOnInit() {
     this.loadSalePoints();
@@ -92,13 +93,25 @@ export class SalePointsList implements OnInit {
   }
 
   loadAvailableUsers() {
-    // Carrega apenas usuários APROVADOS (na fila de espera)
-    this.userService.getPendingUsers().subscribe({
+    this.loadingUsers = true;
+    // Carrega todos os usuários e filtra os que estão APPROVED ou ACTIVE sem ponto de venda
+    this.userService.getAllUsers().subscribe({
       next: (users) => {
-        this.availableUsers = users.filter(u => u.documentsStatus === 'APPROVED');
+        this.availableUsers = users.filter(u =>
+          u.type !== 'ADMIN' &&
+          (u.documentsStatus === 'APPROVED' || u.documentsStatus === 'ACTIVE') &&
+          !u.salePointId
+        );
+        this.loadingUsers = false;
       },
       error: (error) => {
         console.error('Erro ao carregar usuários:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Não foi possível carregar os comerciantes'
+        });
+        this.loadingUsers = false;
       }
     });
   }
@@ -222,6 +235,7 @@ export class SalePointsList implements OnInit {
   openAllocateDialog(salePoint: SalePointDTO) {
     this.selectedSalePoint = salePoint;
     this.selectedUserId = salePoint.allocatedUser?.id || null;
+    this.loadAvailableUsers(); // Recarrega usuários disponíveis
     this.showAllocateDialog = true;
   }
 
@@ -230,7 +244,7 @@ export class SalePointsList implements OnInit {
       this.messageService.add({
         severity: 'warn',
         summary: 'Atenção',
-        detail: 'Selecione um usuário'
+        detail: 'Selecione um comerciante'
       });
       return;
     }
@@ -242,17 +256,17 @@ export class SalePointsList implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Sucesso',
-          detail: 'Usuário alocado com sucesso'
+          detail: 'Comerciante alocado com sucesso'
         });
         this.showAllocateDialog = false;
         this.loadSalePoints();
-        this.loadAvailableUsers();
+        this.loadAvailableUsers(); // Atualiza lista de disponíveis
       },
       error: (error) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Erro',
-          detail: error.error?.message || 'Não foi possível alocar o usuário'
+          detail: error.error?.message || 'Não foi possível alocar o comerciante'
         });
       }
     });

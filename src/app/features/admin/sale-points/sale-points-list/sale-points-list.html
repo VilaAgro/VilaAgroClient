@@ -148,8 +148,9 @@
     [(visible)]="showSalePointDialog"
     [header]="isEditMode ? 'Editar Ponto de Venda' : 'Novo Ponto de Venda'"
     [modal]="true"
-    [style]="{width: '500px'}"
+    [style]="{width: '550px'}"
     [draggable]="false"
+    [resizable]="false"
   >
     <div class="sale-point-form">
       <div class="field">
@@ -184,19 +185,45 @@
   <!-- Dialog: Alocar Comerciante -->
   <p-dialog
     [(visible)]="showAllocateDialog"
-    header="Alocar Comerciante"
+    [header]="selectedSalePoint?.allocatedUser ? 'Alterar Comerciante' : 'Alocar Comerciante'"
     [modal]="true"
-    [style]="{width: '500px'}"
+    [style]="{width: '700px'}"
+    styleClass="allocate-dialog"
     [draggable]="false"
+    [resizable]="false"
   >
+    @if (selectedSalePoint) {
     <div class="allocate-form">
-      <p class="mb-3">
-        Selecione um comerciante para alocar no ponto
-        <strong>{{ selectedSalePoint?.name }}</strong>
-      </p>
+      <div class="point-info-box">
+        <div class="info-row">
+          <i class="pi pi-map-marker"></i>
+          <div class="info-content">
+            <label>Ponto de Venda</label>
+            <strong>{{ selectedSalePoint.name }}</strong>
+          </div>
+        </div>
+        @if (selectedSalePoint.allocatedUser) {
+          <div class="info-row current-user">
+            <i class="pi pi-user"></i>
+            <div class="info-content">
+              <label>Comerciante Atual</label>
+              <strong>{{ selectedSalePoint.allocatedUser.name }}</strong>
+              <small>{{ selectedSalePoint.allocatedUser.email }}</small>
+            </div>
+          </div>
+        }
+      </div>
 
       <div class="field">
-        <label for="user">Comerciante *</label>
+        <label for="user">
+          {{ selectedSalePoint.allocatedUser ? 'Novo Comerciante' : 'Comerciante' }} *
+        </label>
+        @if (loadingUsers) {
+          <div class="loading-message">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Carregando comerciantes...</span>
+          </div>
+        }
         <p-select
           id="user"
           [(ngModel)]="selectedUserId"
@@ -206,28 +233,50 @@
           placeholder="Selecione um comerciante"
           styleClass="w-full"
           [filter]="true"
-          filterBy="name"
+          filterBy="name,email"
+          filterPlaceholder="Buscar comerciante..."
+          [disabled]="loadingUsers || availableUsers.length === 0"
+          appendTo="body"
         >
           <ng-template pTemplate="selectedItem" let-user>
-            {{ user.name }} ({{ user.email }})
+            <div class="selected-user">
+              <i class="pi pi-user"></i>
+              <span>{{ user.name }}</span>
+            </div>
           </ng-template>
           <ng-template pTemplate="item" let-user>
             <div class="user-option">
-              <strong>{{ user.name }}</strong>
-              <small>{{ user.email }}</small>
+              <i class="pi pi-user"></i>
+              <div class="user-details">
+                <strong class="user-name">{{ user.name }}</strong>
+                <small class="user-email">{{ user.email }}</small>
+                <span class="status-badge" [class]="user.documentsStatus === 'ACTIVE' ? 'active' : 'approved'">
+                  {{ user.documentsStatus === 'ACTIVE' ? 'Ativo' : 'Aprovado' }}
+                </span>
+              </div>
             </div>
           </ng-template>
         </p-select>
+        @if (availableUsers.length === 0 && !loadingUsers) {
+          <p-message
+            severity="warn"
+            styleClass="w-full mt-2"
+          >
+            <ng-template pTemplate="content">
+              <div class="empty-users-message">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>Não há comerciantes disponíveis. Todos já possuem pontos alocados ou não estão aprovados/ativos.</span>
+              </div>
+            </ng-template>
+          </p-message>
+        } @else if (!loadingUsers) {
+          <small class="p-text-secondary">
+            {{ availableUsers.length }} {{ availableUsers.length === 1 ? 'comerciante disponível' : 'comerciantes disponíveis' }}
+          </small>
+        }
       </div>
-
-      @if (availableUsers.length === 0) {
-        <p-message
-          severity="info"
-          text="Não há comerciantes aprovados disponíveis para alocação"
-          styleClass="w-full"
-        />
-      }
     </div>
+    }
 
     <ng-template pTemplate="footer">
       <button
