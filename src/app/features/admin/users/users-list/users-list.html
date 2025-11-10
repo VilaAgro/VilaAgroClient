@@ -1,0 +1,358 @@
+<div class="users-management">
+  <p-toast />
+  <p-confirmDialog />
+
+  <!-- Header -->
+  <div class="header">
+    <div class="title-section">
+      <h1>Gerenciamento de Usuários</h1>
+      <p class="subtitle">
+        Gerencie usuários, documentos e alocação de pontos de venda
+      </p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <span class="p-input-icon-left w-full">
+        <i class="pi pi-search"></i>
+        <input
+          pInputText
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+          placeholder="Buscar por nome, email ou CPF..."
+          class="w-full"
+        />
+      </span>
+    </div>
+
+    <div class="filter-group">
+      <p-select
+        [(ngModel)]="selectedStatus"
+        [options]="statusOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Todos os Status"
+        (onChange)="applyFilters()"
+        styleClass="w-full"
+        [showClear]="true"
+      />
+    </div>
+
+    <div class="filter-group">
+      <p-select
+        [(ngModel)]="selectedType"
+        [options]="typeOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Todos os Tipos"
+        (onChange)="applyFilters()"
+        styleClass="w-full"
+        [showClear]="true"
+      />
+    </div>
+
+    <button
+      pButton
+      label="Limpar Filtros"
+      icon="pi pi-filter-slash"
+      class="p-button-outlined"
+      (click)="clearFilters()"
+    ></button>
+  </div>
+
+  <!-- Tabela de Usuários -->
+  <p-table
+    [value]="filteredUsers"
+    [loading]="loading"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuários"
+    styleClass="p-datatable-striped"
+    [globalFilterFields]="['name', 'email', 'cpf']"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="name">Nome <p-sortIcon field="name" /></th>
+        <th pSortableColumn="email">Email <p-sortIcon field="email" /></th>
+        <th pSortableColumn="type">Tipo <p-sortIcon field="type" /></th>
+        <th>Status</th>
+        <th>Ponto de Venda</th>
+        <th>Ações</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-user>
+      <tr>
+        <td>
+          <div class="user-info">
+            <i class="pi pi-user"></i>
+            <span>{{ user.name }}</span>
+          </div>
+        </td>
+        <td>{{ user.email }}</td>
+        <td>
+          <p-tag
+            [value]="getUserTypeLabel(user.type)"
+            [severity]="getTypeSeverity(user.type)"
+          />
+        </td>
+        <td>
+          <p-tag
+            [value]="getUserTypeLabel(user.type) == 'ADMIN' || 'Administrador' ? 'Ativo' : getStatusLabel(user.documentsStatus)"
+            [severity]="getStatusSeverity(user.documentsStatus)"
+          />
+        </td>
+        <td>
+          @if (user.salePointId) {
+          <span class="sale-point-badge">
+            <i class="pi pi-map-marker"></i>
+            Ponto {{ getSalePointNumber(user.salePointId) }}
+          </span>
+          } @else {
+          <span class="no-sale-point">Sem ponto</span>
+          }
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-rounded p-button-text p-button-sm"
+              (click)="viewUser(user)"
+              pTooltip="Ver Detalhes"
+            ></button>
+
+            @if (user.documentsStatus === 'PENDING') {
+            <button
+              pButton
+              icon="pi pi-check"
+              class="p-button-rounded p-button-text p-button-success p-button-sm"
+              (click)="approveUser(user)"
+              pTooltip="Aprovar Documentos"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-times"
+              class="p-button-rounded p-button-text p-button-danger p-button-sm"
+              (click)="rejectUser(user)"
+              pTooltip="Reprovar Documentos"
+            ></button>
+            } @if (user.documentsStatus === 'APPROVED' && !user.salePointId) {
+            <button
+              pButton
+              icon="pi pi-map-marker"
+              class="p-button-rounded p-button-text p-button-info p-button-sm"
+              (click)="allocateSalePoint(user)"
+              pTooltip="Alocar Ponto de Venda"
+            ></button>
+            } @if (user.salePointId) {
+            <button
+              pButton
+              icon="pi pi-map-marker"
+              class="p-button-rounded p-button-text p-button-warning p-button-sm"
+              (click)="changeSalePoint(user)"
+              pTooltip="Alterar Ponto de Venda"
+            ></button>
+            }
+
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-rounded p-button-text p-button-danger p-button-sm"
+              (click)="deleteUser(user)"
+              pTooltip="Excluir Usuário"
+            ></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6" class="text-center">
+          <div class="empty-state">
+            <i class="pi pi-users" style="font-size: 3rem; color: #ccc"></i>
+            <p>Nenhum usuário encontrado</p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Dialog: Ver Detalhes do Usuário -->
+  <p-dialog
+    [(visible)]="showUserDialog"
+    [header]="'Detalhes do Usuário'"
+    [modal]="true"
+    [style]="{width: '600px'}"
+    [draggable]="false"
+  >
+    @if (selectedUser) {
+    <div class="user-details">
+      <div class="detail-group">
+        <label>Nome:</label>
+        <p>{{ selectedUser.name }}</p>
+      </div>
+
+      <div class="detail-group">
+        <label>Email:</label>
+        <p>{{ selectedUser.email }}</p>
+      </div>
+
+      <div class="detail-group">
+        <label>CPF/CNPJ:</label>
+        <p>{{ selectedUser.cpf || 'Não informado' }}</p>
+      </div>
+
+      <div class="detail-group">
+        <label>Tipo:</label>
+        <p-tag
+          [value]="getUserTypeLabel(selectedUser.type)"
+          [severity]="getTypeSeverity(selectedUser.type)"
+        />
+      </div>
+
+      <div class="detail-group">
+        <label>Status dos Documentos:</label>
+        <p-tag
+          [value]="getUserTypeLabel(selectedUser.type) == 'ADMIN' || 'Administrador' ? 'Ativo' : getStatusLabel(selectedUser.documentsStatus)"
+          [severity]="getStatusSeverity(selectedUser.documentsStatus)"
+        />
+      </div>
+
+      <div class="detail-group">
+        <label>Ponto de Venda:</label>
+        <p>
+          {{ selectedUser.salePointId ? 'Ponto ' +
+          getSalePointNumber(selectedUser.salePointId) : 'Não alocado' }}
+        </p>
+      </div>
+
+      <div class="detail-group">
+        <label>Cadastrado em:</label>
+        <p>{{ formatDate(selectedUser.createdAt) }}</p>
+      </div>
+
+      <div class="detail-group">
+        <label>Última atualização:</label>
+        <p>{{ formatDate(selectedUser.updatedAt) }}</p>
+      </div>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Fechar"
+        icon="pi pi-times"
+        (click)="showUserDialog = false"
+        class="p-button-text"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Alocar/Alterar Ponto de Venda -->
+  <p-dialog
+    [(visible)]="showSalePointDialog"
+    [header]="'Alocar Ponto de Venda'"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+  >
+    @if (selectedUser) {
+    <div class="sale-point-form">
+      <p class="mb-3">
+        Selecione um ponto de venda para
+        <strong>{{ selectedUser.name }}</strong>
+      </p>
+
+      <div class="field">
+        <label for="salePoint">Ponto de Venda:</label>
+        <p-select
+          id="salePoint"
+          [(ngModel)]="selectedSalePointId"
+          [options]="availableSalePoints"
+          optionLabel="number"
+          optionValue="id"
+          placeholder="Selecione um ponto"
+          styleClass="w-full"
+        >
+          <ng-template pTemplate="selectedItem" let-point>
+            Ponto {{ point.number }} - {{ point.status }}
+          </ng-template>
+          <ng-template pTemplate="item" let-point>
+            Ponto {{ point.number }} - {{ point.status }}
+          </ng-template>
+        </p-select>
+      </div>
+    </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showSalePointDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        label="Alocar"
+        icon="pi pi-check"
+        (click)="confirmSalePointAllocation()"
+        [disabled]="!selectedSalePointId"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Reprovar Documentos -->
+  <p-dialog
+    [(visible)]="showRejectDialog"
+    header="Reprovar Documentos"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+  >
+    <div class="reject-form">
+      <p class="mb-3">
+        Informe o motivo da reprovação dos documentos de
+        <strong>{{ selectedUser?.name }}</strong>
+      </p>
+
+      <div class="field">
+        <label for="rejectReason">Motivo:</label>
+        <textarea
+          id="rejectReason"
+          pInputTextarea
+          [(ngModel)]="rejectionReason"
+          rows="5"
+          class="w-full"
+          placeholder="Descreva o motivo da reprovação..."
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showRejectDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        label="Reprovar"
+        icon="pi pi-check"
+        (click)="confirmRejection()"
+        [disabled]="!rejectionReason"
+        class="p-button-danger"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>

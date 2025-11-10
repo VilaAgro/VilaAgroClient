@@ -47,62 +47,62 @@ export class AdminLayout {
   }
 
   private buildMenu(): MenuItem[] {
-    return [
-      {
-        label: 'Visão Geral',
-        icon: 'pi pi-home',
-        routerLink: '/admin/dashboard'
-      },
-      {
-        label: 'Gerenciamento',
-        items: [
-          {
-            label: 'Usuários',
-            icon: 'pi pi-users',
-            routerLink: '/admin/users' // Rota futura
-          },
-          {
-            label: 'Pontos de Venda',
-            icon: 'pi pi-map-marker',
-            routerLink: '/admin/sale-points' // Rota futura
-          },
-          {
-            label: 'Feiras e Atrações',
-            icon: 'pi pi-shopping-bag',
-            routerLink: '/admin/fairs' // Rota futura
-          },
-          {
-            label: 'Frequência',
-            icon: 'pi pi-calendar',
-            routerLink: '/admin/attendance' // Rota futura
-          },
-          {
-            label: 'Cursos',
-            icon: 'pi pi-book',
-            routerLink: '/admin/courses' // Rota futura
-          },
-          {
-            label: 'Comunicados',
-            icon: 'pi pi-bullhorn',
-            routerLink: '/admin/statements' // Rota futura
-          }
-        ]
-      },
-      {
-        label: 'Sua Conta',
-        items: [
-          {
-            label: 'Meu Perfil',
-            icon: 'pi pi-user',
-            command: () => this.router.navigate(['/admin/profile']) // Rota futura
-          },
-          {
-            label: 'Sair',
-            icon: 'pi pi-sign-out',
-            command: () => this.logout()
-          }
-        ]
-      }
-    ];
-  }
+  return [
+    {
+      label: 'Visão Geral',
+      icon: 'pi pi-home',
+      routerLink: '/admin/dashboard'
+    },
+    {
+      label: 'Gerenciamento',
+      items: [
+        {
+          label: 'Usuários',
+          icon: 'pi pi-users',
+          routerLink: '/admin/users' // ✅ Agora funciona!
+        },
+        {
+          label: 'Pontos de Venda',
+          icon: 'pi pi-map-marker',
+          routerLink: '/admin/sale-points'
+        },
+        {
+          label: 'Feiras e Atrações',
+          icon: 'pi pi-shopping-bag',
+          routerLink: '/admin/fairs'
+        },
+        {
+          label: 'Frequência',
+          icon: 'pi pi-calendar',
+          routerLink: '/admin/attendance'
+        },
+        {
+          label: 'Cursos',
+          icon: 'pi pi-book',
+          routerLink: '/admin/courses'
+        },
+        {
+          label: 'Comunicados',
+          icon: 'pi pi-bullhorn',
+          routerLink: '/admin/statements'
+        }
+      ]
+    },
+    {
+      label: 'Sua Conta',
+      items: [
+        {
+          label: 'Meu Perfil',
+          icon: 'pi pi-user',
+          command: () => this.router.navigate(['/admin/profile'])
+        },
+        {
+          label: 'Sair',
+          icon: 'pi pi-sign-out',
+          command: () => this.logout()
+        }
+      ]
+    }
+  ];
+}
 }

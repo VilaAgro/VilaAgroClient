@@ -4,63 +4,85 @@
   </div>
 
   @if (loading) {
-  <div class="loading">Carregando estatísticas...</div>
+    <div class="loading">Carregando estatísticas...</div>
   } @else if (stats) {
-  <div class="stats-grid">
-    <p-card header="Solicitações Pendentes" styleClass="stat-card pending">
-      <div class="stat-value">{{ stats.pendingRegistrations }}</div>
-      <p>Novos cadastros aguardando aprovação</p>
-    </p-card>
+    <div class="stats-grid">
+      <p-card header="Solicitações Pendentes" styleClass="stat-card pending">
+        <div class="stat-value">{{ stats.pendingRegistrations }}</div>
+        <p>Novos cadastros aguardando aprovação</p>
+        <button
+          pButton
+          label="Ver Solicitações"
+          class="p-button-sm mt-2"
+          (click)="navigateToUsers()"
+        ></button>
+      </p-card>
 
-    <p-card header="Fila de Espera" styleClass="stat-card waiting">
-      <div class="stat-value">{{ stats.waitingList }}</div>
-      <p>Usuários aprovados aguardando alocação</p>
-    </p-card>
+      <p-card header="Fila de Espera" styleClass="stat-card waiting">
+        <div class="stat-value">{{ stats.waitingList }}</div>
+        <p>Usuários aprovados aguardando alocação</p>
+        <button
+          pButton
+          label="Alocar Pontos"
+          class="p-button-sm mt-2"
+          (click)="navigateToUsers()"
+        ></button>
+      </p-card>
 
-    <p-card
-      header="Justificativas Pendentes"
-      styleClass="stat-card justifications"
-    >
-      <div class="stat-value">{{ stats.pendingJustifications }}</div>
-      <p>Faltas aguardando análise</p>
-    </p-card>
+      <p-card header="Justificativas Pendentes" styleClass="stat-card justifications">
+        <div class="stat-value">{{ stats.pendingJustifications }}</div>
+        <p>Faltas aguardando análise</p>
+        <button
+          pButton
+          label="Revisar"
+          class="p-button-sm mt-2"
+          (click)="navigateToAttendance()"
+        ></button>
+      </p-card>
 
-    <p-card header="Taxa de Ocupação" styleClass="stat-card occupation">
-      <div class="stat-value">{{ stats.occupationRate.toFixed(1) }}%</div>
-      <p>
-        {{ stats.occupiedSalePoints }} de {{ stats.totalSalePoints }} pontos
-        ocupados
-      </p>
-    </p-card>
-  </div>
+      <p-card header="Taxa de Ocupação" styleClass="stat-card occupation">
+        <div class="stat-value">{{ stats.occupationRate.toFixed(1) }}%</div>
+        <p>{{ stats.occupiedSalePoints }} de {{ stats.totalSalePoints }} pontos ocupados</p>
+        <button
+          pButton
+          label="Ver Pontos"
+          class="p-button-sm mt-2"
+          (click)="navigateToSalePoints()"
+        ></button>
+      </p-card>
+    </div>
 
-  <div class="actions-grid">
-    <p-card header="Ações Rápidas">
-      <button
-        pButton
-        label="Gerenciar Usuários"
-        class="mb-2 mr-2"
-        icon="pi pi-users"
-      ></button>
-      <button
-        pButton
-        label="Pontos de Venda"
-        class="mb-2 mr-2 w-full"
-        icon="pi pi-map-marker"
-      ></button>
-      <button
-        pButton
-        label="Frequência"
-        class="mb-2 mr-2 w-full"
-        icon="pi pi-calendar"
-      ></button>
-      <button
-        pButton
-        label="Feiras"
-        class="w-full"
-        icon="pi pi-shopping-bag"
-      ></button>
-    </p-card>
-  </div>
+    <div class="actions-grid">
+      <p-card header="Ações Rápidas">
+        <button
+          pButton
+          label="Gerenciar Usuários"
+          class="mb-2 w-full"
+          icon="pi pi-users"
+          (click)="navigateToUsers()"
+        ></button>
+        <button
+          pButton
+          label="Pontos de Venda"
+          class="mb-2 w-full"
+          icon="pi pi-map-marker"
+          (click)="navigateToSalePoints()"
+        ></button>
+        <button
+          pButton
+          label="Frequência"
+          class="mb-2 w-full"
+          icon="pi pi-calendar"
+          (click)="navigateToAttendance()"
+        ></button>
+        <button
+          pButton
+          label="Feiras"
+          class="w-full"
+          icon="pi pi-shopping-bag"
+          (click)="navigateToFairs()"
+        ></button>
+      </p-card>
+    </div>
   }
 </div>

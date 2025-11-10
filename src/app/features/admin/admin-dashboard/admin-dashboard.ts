@@ -1,10 +1,11 @@
+// src/app/features/admin/admin-dashboard/admin-dashboard.ts
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { AuthService } from '../../../core/services/auth';
 
 interface DashboardStats {
   pendingRegistrations: number;
@@ -24,7 +25,7 @@ interface DashboardStats {
 })
 export class AdminDashboard implements OnInit {
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
+  private router = inject(Router);
 
   stats: DashboardStats | null = null;
   loading = true;
@@ -46,5 +47,22 @@ export class AdminDashboard implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // Métodos de navegação
+  navigateToUsers() {
+    this.router.navigate(['/admin/users']);
+  }
+
+  navigateToSalePoints() {
+    this.router.navigate(['/admin/sale-points']);
+  }
+
+  navigateToAttendance() {
+    this.router.navigate(['/admin/attendance']);
+  }
+
+  navigateToFairs() {
+    this.router.navigate(['/admin/fairs']);
   }
 }
