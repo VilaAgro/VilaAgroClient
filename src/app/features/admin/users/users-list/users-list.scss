@@ -4,21 +4,30 @@
   margin: 0 auto;
 }
 
-.header {
-  margin-bottom: 2rem;
+:host ::ng-deep .page-toolbar {
+  background: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem; // Espaçamento para os filtros abaixo
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); // Sombra sutil
 
   .title-section {
     h1 {
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 0.25rem 0;
       color: #333;
-      font-size: 2rem;
+      font-size: 1.75rem; // Tamanho mais refinado
+      font-weight: 600;
     }
-
     .subtitle {
       margin: 0;
-      color: #666;
-      font-size: 1rem;
+      color: #6c757d; // Cor mais suave
+      font-size: 0.95rem;
     }
+  }
+
+  .p-toolbar-group-end {
+    align-self: center; // Garante alinhamento vertical do botão
   }
 }
 

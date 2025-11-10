@@ -10,6 +10,7 @@ import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
+import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { UserService, UserDTO } from '../../../../core/services/user/user';
@@ -34,7 +35,8 @@ interface SalePoint {
     SelectModule,
     TextareaModule,
     ToastModule,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    ToolbarModule
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './users-list.html',
@@ -327,6 +329,16 @@ export class UsersList implements OnInit {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
+    });
+  }
+
+  openNewUserDialog() {
+    // Aqui você implementaria a lógica para abrir um dialog de criação
+    // Por enquanto, vamos apenas exibir uma notificação:
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Info',
+      detail: 'Funcionalidade "Novo Usuário" a ser implementada.'
     });
   }
 }

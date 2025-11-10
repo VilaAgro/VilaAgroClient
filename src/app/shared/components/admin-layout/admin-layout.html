@@ -7,38 +7,48 @@
       [rounded]="true"
       styleClass="menu-button"
     />
-    <span class="logo-text">Vila Agro - Admin</span>
+    <img
+      src="/assets/images/logo.svg"
+      alt="Vila Agro Logo"
+      class="toolbar-logo"
+    />
+    <span class="logo-text">Vila Agro</span>
   </div>
 
   <div class="p-toolbar-group-end">
     <span class="welcome-text">Olá, {{ currentUser?.name }}</span>
-    <p-button
-      icon="pi pi-sign-out"
-      label="Sair"
-      (click)="logout()"
-      [text]="true"
-      [rounded]="true"
-      styleClass="logout-button"
+    <p-avatar
+      [label]="userInitials()"
+      styleClass="user-avatar"
+      shape="circle"
+      (click)="userMenu.toggle($event)"
+      pTooltip="Opções da Conta"
+      tooltipPosition="bottom"
     />
+    <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
   </div>
 </p-toolbar>
 
 <p-drawer
   [(visible)]="sidebarVisible"
-  [showCloseIcon]="false"
+  [modal]="isMobile()"
   styleClass="admin-sidebar"
+  [style]="{'width': '250px'}"
 >
   <ng-template pTemplate="header">
     <div class="sidebar-header">
       <div class="logo">
-        <img src="/assets/images/logo.svg" alt="Vila Agro Logo" />
+        <img src="/assets/images/logo.svg" alt="Vila Agro Logo" class="toolbar-logo" />
       </div>
       <h3>Vila Agro</h3>
     </div>
   </ng-template>
-  <p-menu [model]="menuItems" styleClass="admin-menu" />
+  <p-menu [model]="sidebarMenuItems" styleClass="admin-menu" />
 </p-drawer>
 
-<div class="admin-content" [class.sidebar-visible]="sidebarVisible">
+<div
+  class="admin-content"
+  [class.sidebar-visible]="sidebarVisible() && !isMobile()"
+>
   <router-outlet></router-outlet>
 </div>

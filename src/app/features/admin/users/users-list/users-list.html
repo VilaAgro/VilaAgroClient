@@ -3,26 +3,37 @@
   <p-confirmDialog />
 
   <!-- Header -->
-  <div class="header">
-    <div class="title-section">
-      <h1>Gerenciamento de Usuários</h1>
-      <p class="subtitle">
-        Gerencie usuários, documentos e alocação de pontos de venda
-      </p>
+  <p-toolbar styleClass="page-toolbar" class="mb-2">
+    <div class="p-toolbar-group-start">
+      <div class="title-section">
+        <h1>Gerenciamento de Usuários</h1>
+        <p class="subtitle">
+          Gerencie usuários, documentos e alocação de pontos de venda
+        </p>
+      </div>
     </div>
-  </div>
+    <div class="p-toolbar-group-end">
+      <button
+        pButton
+        label="Novo Usuário"
+        icon="pi pi-plus"
+        class="p-button-success"
+        (click)="openNewUserDialog()"
+      ></button>
+    </div>
+  </p-toolbar>
 
   <!-- Filtros -->
   <div class="filters-section">
     <div class="filter-group">
       <span class="p-input-icon-left w-full">
-        <i class="pi pi-search"></i>
         <input
           pInputText
           [(ngModel)]="searchTerm"
           (input)="applyFilters()"
           placeholder="Buscar por nome, email ou CPF..."
           class="w-full"
+          fluid
         />
       </span>
     </div>

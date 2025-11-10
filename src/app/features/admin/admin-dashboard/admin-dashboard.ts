@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
@@ -19,7 +20,7 @@ interface DashboardStats {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule],
+  imports: [CommonModule, CardModule, ButtonModule, ProgressSpinnerModule],
   templateUrl: './admin-dashboard.html',
   styleUrls: ['./admin-dashboard.scss']
 })
