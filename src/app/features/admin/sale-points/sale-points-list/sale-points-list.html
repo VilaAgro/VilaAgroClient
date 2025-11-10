@@ -1,0 +1,249 @@
+<div class="sale-points-management">
+  <p-toast />
+  <p-confirmDialog />
+
+  <!-- Header -->
+  <p-toolbar styleClass="page-toolbar" class="mb-2">
+    <div class="p-toolbar-group-start">
+      <div class="title-section">
+        <h1>Gerenciamento de Pontos de Venda</h1>
+        <p class="subtitle">
+          Gerencie pontos de venda e alocação de comerciantes
+        </p>
+      </div>
+    </div>
+    <div class="p-toolbar-group-end">
+      <button
+        pButton
+        label="Novo Ponto de Venda"
+        icon="pi pi-plus"
+        class="p-button-success"
+        (click)="openNewSalePointDialog()"
+      ></button>
+    </div>
+  </p-toolbar>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <span class="p-input-icon-left w-full">
+        <input
+          pInputText
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+          placeholder="Buscar por nome ou comerciante..."
+          class="w-full"
+          fluid
+        />
+      </span>
+    </div>
+
+    <button
+      pButton
+      label="Limpar Filtros"
+      icon="pi pi-filter-slash"
+      class="p-button-outlined"
+      (click)="clearFilters()"
+    ></button>
+  </div>
+
+  <!-- Tabela de Pontos de Venda -->
+  <p-table
+    [value]="filteredSalePoints"
+    [loading]="loading"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} pontos"
+    styleClass="p-datatable-striped"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="name">Nome <p-sortIcon field="name" /></th>
+        <th>Status</th>
+        <th>Comerciante Alocado</th>
+        <th>Ações</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-salePoint>
+      <tr>
+        <td>
+          <div class="sale-point-info">
+            <i class="pi pi-map-marker"></i>
+            <span>{{ salePoint.name }}</span>
+          </div>
+        </td>
+        <td>
+          <p-tag
+            [value]="getStatusBadge(salePoint).label"
+            [severity]="getStatusBadge(salePoint).severity"
+          />
+        </td>
+        <td>
+          @if (salePoint.allocatedUser) {
+            <div class="user-badge">
+              <i class="pi pi-user"></i>
+              <span>{{ salePoint.allocatedUser.name }}</span>
+            </div>
+          } @else {
+            <span class="no-user">Nenhum comerciante</span>
+          }
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-rounded p-button-text p-button-sm"
+              (click)="openEditSalePointDialog(salePoint)"
+              pTooltip="Editar"
+            ></button>
+
+            @if (salePoint.allocatedUser) {
+              <button
+                pButton
+                icon="pi pi-user-minus"
+                class="p-button-rounded p-button-text p-button-warning p-button-sm"
+                (click)="removeUser(salePoint)"
+                pTooltip="Remover Comerciante"
+              ></button>
+            } @else {
+              <button
+                pButton
+                icon="pi pi-user-plus"
+                class="p-button-rounded p-button-text p-button-info p-button-sm"
+                (click)="openAllocateDialog(salePoint)"
+                pTooltip="Alocar Comerciante"
+              ></button>
+            }
+
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-rounded p-button-text p-button-danger p-button-sm"
+              (click)="deleteSalePoint(salePoint)"
+              pTooltip="Excluir"
+            ></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="4" class="text-center">
+          <div class="empty-state">
+            <i class="pi pi-map-marker" style="font-size: 3rem; color: #ccc"></i>
+            <p>Nenhum ponto de venda encontrado</p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Dialog: Criar/Editar Ponto de Venda -->
+  <p-dialog
+    [(visible)]="showSalePointDialog"
+    [header]="isEditMode ? 'Editar Ponto de Venda' : 'Novo Ponto de Venda'"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+  >
+    <div class="sale-point-form">
+      <div class="field">
+        <label for="name">Nome do Ponto *</label>
+        <input
+          pInputText
+          id="name"
+          [(ngModel)]="salePointForm.name"
+          class="w-full"
+          placeholder="Ex: Ponto Central"
+        />
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showSalePointDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        [label]="isEditMode ? 'Atualizar' : 'Criar'"
+        icon="pi pi-check"
+        (click)="saveSalePoint()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Alocar Comerciante -->
+  <p-dialog
+    [(visible)]="showAllocateDialog"
+    header="Alocar Comerciante"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [draggable]="false"
+  >
+    <div class="allocate-form">
+      <p class="mb-3">
+        Selecione um comerciante para alocar no ponto
+        <strong>{{ selectedSalePoint?.name }}</strong>
+      </p>
+
+      <div class="field">
+        <label for="user">Comerciante *</label>
+        <p-select
+          id="user"
+          [(ngModel)]="selectedUserId"
+          [options]="availableUsers"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Selecione um comerciante"
+          styleClass="w-full"
+          [filter]="true"
+          filterBy="name"
+        >
+          <ng-template pTemplate="selectedItem" let-user>
+            {{ user.name }} ({{ user.email }})
+          </ng-template>
+          <ng-template pTemplate="item" let-user>
+            <div class="user-option">
+              <strong>{{ user.name }}</strong>
+              <small>{{ user.email }}</small>
+            </div>
+          </ng-template>
+        </p-select>
+      </div>
+
+      @if (availableUsers.length === 0) {
+        <p-message
+          severity="info"
+          text="Não há comerciantes aprovados disponíveis para alocação"
+          styleClass="w-full"
+        />
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showAllocateDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        label="Alocar"
+        icon="pi pi-check"
+        (click)="allocateUser()"
+        [disabled]="!selectedUserId"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>
