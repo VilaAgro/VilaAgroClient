@@ -128,8 +128,11 @@
             <i class="pi pi-map-marker"></i>
             Ponto {{ getSalePointNumber(user.salePointId) }}
           </span>
-          } @else {
+          } @else if (user.type !== 'ADMIN' && getUserTypeLabel(user.type) !=
+          'Administrador') {
           <span class="no-sale-point">Sem ponto</span>
+          } @else {
+          <span>Administrador - Sem ponto de venda</span>
           }
         </td>
         <td>
@@ -247,10 +250,14 @@
 
       <div class="detail-group">
         <label>Ponto de Venda:</label>
-        <p>
-          {{ selectedUser.salePointId ? 'Ponto ' +
-          getSalePointNumber(selectedUser.salePointId) : 'Não alocado' }}
-        </p>
+        @if (selectedUser.salePointId) {
+        <p>Ponto {{ getSalePointNumber(selectedUser.salePointId) }}</p>
+        } @else if (selectedUser.type !== 'ADMIN' &&
+        getUserTypeLabel(selectedUser.type) != 'Administrador') {
+        <p>Não alocado</p>
+        } @else {
+        <p>Administrador - Sem ponto de venda</p>
+        }
       </div>
 
       <div class="detail-group">
