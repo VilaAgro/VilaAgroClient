@@ -49,7 +49,17 @@ export class UsersList implements OnInit {
 
   users: UserDTO[] = [];
   filteredUsers: UserDTO[] = [];
+
   loading = false;
+
+  showCreateUserDialog = false;
+  userForm = {
+    name: '',
+    email: '',
+    cpf: '',
+    password: '',
+    type: null as string | null
+  };
 
   // Filtros
   searchTerm = '';
@@ -333,12 +343,64 @@ export class UsersList implements OnInit {
   }
 
   openNewUserDialog() {
-    // Aqui você implementaria a lógica para abrir um dialog de criação
-    // Por enquanto, vamos apenas exibir uma notificação:
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Info',
-      detail: 'Funcionalidade "Novo Usuário" a ser implementada.'
+    this.userForm = {
+      name: '',
+      email: '',
+      cpf: '',
+      password: '',
+      type: null
+    };
+    this.showCreateUserDialog = true;
+  }
+
+  createUser() {
+    // Validações básicas
+    if (!this.userForm.name || !this.userForm.email || !this.userForm.password || !this.userForm.type) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atenção',
+        detail: 'Preencha todos os campos obrigatórios'
+      });
+      return;
+    }
+
+    // Valida CPF (11 dígitos) se fornecido
+    if (this.userForm.cpf && !/^\d{11}$/.test(this.userForm.cpf)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atenção',
+        detail: 'CPF deve conter exatamente 11 dígitos'
+      });
+      return;
+    }
+
+    const userData = {
+      name: this.userForm.name,
+      email: this.userForm.email,
+      cpf: this.userForm.cpf || undefined,
+      password: this.userForm.password,
+      type: this.userForm.type!,
+      documentsStatus: 'PENDING'
+    };
+
+    // Chama o endpoint de criação de usuário (POST /api/users)
+    this.userService.createUser(userData).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Sucesso',
+          detail: 'Usuário criado com sucesso'
+        });
+        this.showCreateUserDialog = false;
+        this.loadUsers();
+      },
+      error: (error: { error: { message: any; }; }) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: error.error?.message || 'Não foi possível criar o usuário'
+        });
+      }
     });
   }
 }

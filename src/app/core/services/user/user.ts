@@ -88,4 +88,10 @@ export class UserService {
       { withCredentials: true }
     );
   }
+
+  createUser(data: Partial<UserDTO>): Observable<UserDTO> {
+    return this.http.post<UserDTO>(this.baseUrl, data, {
+      withCredentials: true
+    });
+  }
 }

@@ -111,11 +111,16 @@
             [severity]="getTypeSeverity(user.type)"
           />
         </td>
-        <td>
+        <td class="justify-center">
+          @if (user.type === 'ADMIN' || getUserTypeLabel(user.type) ==
+          'Administrador') {
+          <p>Administrador</p>
+          } @else {
           <p-tag
-            [value]="getUserTypeLabel(user.type) == 'ADMIN' || 'Administrador' ? 'Ativo' : getStatusLabel(user.documentsStatus)"
+            [value]="getStatusLabel(user.documentsStatus)"
             [severity]="getStatusSeverity(user.documentsStatus)"
           />
+          }
         </td>
         <td>
           @if (user.salePointId) {
@@ -229,10 +234,15 @@
 
       <div class="detail-group">
         <label>Status dos Documentos:</label>
+        @if (selectedUser.type === 'ADMIN' ||
+        getUserTypeLabel(selectedUser.type) == 'Administrador') {
+        <p>Administrador - Sem documentos</p>
+        } @else {
         <p-tag
-          [value]="getUserTypeLabel(selectedUser.type) == 'ADMIN' || 'Administrador' ? 'Ativo' : getStatusLabel(selectedUser.documentsStatus)"
+          [value]="getStatusLabel(selectedUser.documentsStatus)"
           [severity]="getStatusSeverity(selectedUser.documentsStatus)"
         />
+        }
       </div>
 
       <div class="detail-group">
@@ -365,5 +375,16 @@
         class="p-button-danger"
       ></button>
     </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Criar Novo Usuário -->
+  <p-dialog
+    [(visible)]="showCreateUserDialog"
+    header="Criar Novo Usuário"
+    [modal]="true"
+    [style]="{width: '600px'}"
+    [draggable]="false"
+  >
+    title-section
   </p-dialog>
 </div>
