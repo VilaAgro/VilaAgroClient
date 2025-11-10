@@ -9,5 +9,9 @@ export const AdminRoutes: Routes = [
   {
     path: 'users',
     loadComponent: () => import('./users/users-list/users-list').then(c => c.UsersList)
+  },
+  {
+    path: 'sale-points',
+    loadComponent: () => import('./sale-points/sale-points-list/sale-points-list').then(c => c.SalePointsList)
   }
 ];
