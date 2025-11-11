@@ -394,6 +394,7 @@
           id="date"
           [(ngModel)]="fairForm.date"
           dateFormat="dd/mm/yy"
+          [minDate]="minDate"
           [showIcon]="true"
           styleClass="w-full"
           placeholder="Selecione a data"

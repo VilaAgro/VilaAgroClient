@@ -70,6 +70,7 @@ export class FairsList implements OnInit {
   loading = false;
   loadingAttractions = false;
   loadingArtists = false;
+  minDate: Date = new Date();
 
   // Filtros
   searchTerm = '';

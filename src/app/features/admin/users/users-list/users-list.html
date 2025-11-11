@@ -227,6 +227,16 @@
             ></button>
             }
 
+            @if (user.documentsStatus === 'INACTIVE' && user.type !== 'ADMIN') {
+            <button
+              pButton
+              icon="pi pi-check-circle"
+              class="p-button-rounded p-button-text p-button-warning p-button-sm"
+              (click)="activateUser(user)"
+              pTooltip="Ativar Comerciante"
+            ></button>
+            }
+
             @if ((user.documentsStatus === 'APPROVED' || user.documentsStatus === 'ACTIVE') && !user.salePointId && user.type !== 'ADMIN') {
             <button
               pButton
