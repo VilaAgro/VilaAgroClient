@@ -21,5 +21,9 @@ export const AdminRoutes: Routes = [
   {
     path: 'attendance',
     loadComponent: () => import('./attendance/attendance-management').then(c => c.AttendanceManagement)
+  },
+  {
+    path: 'courses',
+    loadComponent: () => import('./courses/courses-management/courses-management').then(c => c.CoursesList)
   }
 ];

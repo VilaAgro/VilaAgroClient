@@ -1,0 +1,342 @@
+<div class="courses-management">
+  <p-toast />
+  <p-confirmDialog />
+
+  <!-- Header -->
+  <p-toolbar styleClass="page-toolbar" class="mb-2">
+    <div class="p-toolbar-group-start">
+      <div class="title-section">
+        <h1>Gerenciamento de Cursos e Treinamentos</h1>
+        <p class="subtitle">
+          Gerencie cursos, treinamentos e acompanhe as inscrições
+        </p>
+      </div>
+    </div>
+    <div class="p-toolbar-group-end">
+      <button
+        pButton
+        label="Novo Curso"
+        icon="pi pi-plus"
+        class="p-button-success"
+        (click)="openNewCourseDialog()"
+      ></button>
+    </div>
+  </p-toolbar>
+
+  <!-- Estatísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon upcoming">
+        <i class="pi pi-calendar-plus"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getUpcomingCoursesCount() }}</div>
+        <div class="stat-label">Cursos Agendados</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon completed">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getPastCoursesCount() }}</div>
+        <div class="stat-label">Cursos Concluídos</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon enrollments">
+        <i class="pi pi-users"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getTotalEnrollmentsCount() }}</div>
+        <div class="stat-label">Total de Inscrições</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <span class="p-input-icon-left w-full">
+        <input
+          pInputText
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+          placeholder="Buscar por título ou descrição..."
+          class="w-full"
+          fluid
+        />
+      </span>
+    </div>
+
+    <div class="filter-toggle">
+      <button
+        pButton
+        [label]="showPastCourses ? 'Ocultar Concluídos' : 'Mostrar Concluídos'"
+        [icon]="showPastCourses ? 'pi pi-eye-slash' : 'pi pi-eye'"
+        class="p-button-outlined"
+        (click)="togglePastCourses()"
+      ></button>
+    </div>
+
+    <button
+      pButton
+      label="Limpar Filtros"
+      icon="pi pi-filter-slash"
+      class="p-button-outlined"
+      (click)="clearFilters()"
+    ></button>
+  </div>
+
+  <!-- Tabela de Cursos -->
+  <p-table
+    [value]="filteredCourses"
+    [loading]="loading"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} cursos"
+    styleClass="p-datatable-striped"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="title">Título <p-sortIcon field="title" /></th>
+        <th pSortableColumn="datetime">Data e Hora <p-sortIcon field="datetime" /></th>
+        <th>Descrição</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-course>
+      <tr [class.past-course]="isPastCourse(course.datetime)">
+        <td>
+          <div class="course-title">
+            <i class="pi pi-book"></i>
+            <span>{{ course.title }}</span>
+          </div>
+        </td>
+        <td>
+          <div class="datetime-info">
+            <div class="date">
+              <i class="pi pi-calendar"></i>
+              {{ formatDate(course.datetime) }}
+            </div>
+            <div class="time">
+              <i class="pi pi-clock"></i>
+              {{ formatTime(course.datetime) }}
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="course-description">
+            {{ course.description || 'Sem descrição' }}
+          </div>
+        </td>
+        <td>
+          <p-tag
+            [value]="getCourseBadge(course.datetime).label"
+            [severity]="getCourseBadge(course.datetime).severity"
+          />
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button
+              pButton
+              icon="pi pi-users"
+              class="p-button-rounded p-button-text p-button-info p-button-sm"
+              (click)="viewEnrolledUsers(course)"
+              pTooltip="Ver Inscritos"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-rounded p-button-text p-button-sm"
+              (click)="openEditCourseDialog(course)"
+              pTooltip="Editar"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-trash"
+              class="p-button-rounded p-button-text p-button-danger p-button-sm"
+              (click)="deleteCourse(course)"
+              pTooltip="Excluir"
+            ></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="5" class="text-center">
+          <div class="empty-state">
+            <i class="pi pi-book" style="font-size: 3rem; color: #ccc"></i>
+            <p>Nenhum curso encontrado</p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- Dialog: Criar/Editar Curso -->
+  <p-dialog
+    [(visible)]="showCourseDialog"
+    [header]="isEditMode ? 'Editar Curso' : 'Novo Curso'"
+    [modal]="true"
+    [style]="{width: '600px'}"
+    [draggable]="false"
+  >
+    <div class="course-form">
+      <div class="field">
+        <label for="title">Título do Curso *</label>
+        <input
+          pInputText
+          id="title"
+          [(ngModel)]="courseForm.title"
+          class="w-full"
+          placeholder="Ex: Cultivo Orgânico de Hortaliças"
+        />
+      </div>
+
+      <div class="field">
+        <label for="datetime">Data e Hora *</label>
+        <p-datepicker
+          id="datetime"
+          [(ngModel)]="courseForm.datetime"
+          [showTime]="true"
+          [showIcon]="true"
+          [minDate]="minDate"
+          dateFormat="dd/mm/yy"
+          hourFormat="24"
+          styleClass="w-full"
+          placeholder="Selecione data e hora"
+          [iconDisplay]="'input'"
+          appendTo="body"
+        />
+      </div>
+
+      <div class="field">
+        <label for="description">Descrição</label>
+        <textarea
+          pInputTextarea
+          id="description"
+          [(ngModel)]="courseForm.description"
+          rows="4"
+          class="w-full"
+          placeholder="Descreva o conteúdo do curso, requisitos, objetivos..."
+        ></textarea>
+      </div>
+
+      <div class="info-box">
+        <i class="pi pi-info-circle"></i>
+        <div>
+          <strong>Dica:</strong> Forneça uma descrição clara e detalhada para que os
+          comerciantes possam entender o valor do curso antes de se inscrever.
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Cancelar"
+        icon="pi pi-times"
+        (click)="showCourseDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        [label]="isEditMode ? 'Atualizar' : 'Criar'"
+        icon="pi pi-check"
+        (click)="saveCourse()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Dialog: Ver Inscritos -->
+  <p-dialog
+    [(visible)]="showEnrolledDialog"
+    [header]="'Inscritos: ' + selectedCourse?.title"
+    [modal]="true"
+    [style]="{width: '700px'}"
+    [draggable]="false"
+  >
+    @if (selectedCourse) {
+      <div class="enrolled-info">
+        <div class="course-details">
+          <div class="detail-item">
+            <i class="pi pi-calendar"></i>
+            <span>{{ formatDateTime(selectedCourse.datetime) }}</span>
+          </div>
+          @if (selectedCourse.description) {
+            <p class="course-desc">{{ selectedCourse.description }}</p>
+          }
+        </div>
+
+        <div class="enrolled-count">
+          <i class="pi pi-users"></i>
+          <span>{{ enrolledUsers.length }} inscritos</span>
+        </div>
+      </div>
+
+      <p-table
+        [value]="enrolledUsers"
+        [loading]="loadingEnrolled"
+        styleClass="p-datatable-striped enrolled-table"
+        [paginator]="enrolledUsers.length > 10"
+        [rows]="10"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Tipo</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td>
+              <div class="user-info">
+                <i class="pi pi-user"></i>
+                <span>{{ user.name }}</span>
+              </div>
+            </td>
+            <td>{{ user.email }}</td>
+            <td>
+              <p-tag
+                [value]="getUserTypeLabel(user.type)"
+                [severity]="getTypeSeverity(user.type)"
+              />
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="3" class="text-center">
+              <div class="empty-state-small">
+                <i class="pi pi-users"></i>
+                <p>Nenhuma inscrição ainda</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Fechar"
+        icon="pi pi-times"
+        (click)="showEnrolledDialog = false"
+        class="p-button-text"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>
